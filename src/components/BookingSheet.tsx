@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useBooking } from "./BookingProvider";
 import { getLenis } from "./SmoothScroll";
-import { rooms } from "@/content/site";
-import { bookingToWhatsAppUrl } from "@/lib/booking";
+import { hotel, rooms } from "@/content/site";
+import { bookingToMailto, bookingToWhatsAppUrl } from "@/lib/booking";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -58,15 +58,24 @@ function BookingForm({ initialRoom }: { initialRoom: string }) {
   const [today] = useState(() => iso(new Date()));
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
-  const [guests, setGuests] = useState(() => rooms.find((r) => r.slug === initialRoom)?.guests ?? 2);
+  const [guests, setGuests] = useState(() => rooms.find((r) => r.slug === initialRoom)?.maxGuests ?? 2);
   const [roomSlug, setRoomSlug] = useState(initialRoom);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
 
-  const submit = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const url = bookingToWhatsAppUrl({ checkIn, checkOut, guests, room: roomSlug, name, phone });
-    window.open(url, "_blank", "noopener");
+    const req = { checkIn, checkOut, guests, room: roomSlug, name, phone };
+    const via = ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.value;
+    if (via === "email") window.location.href = bookingToMailto(req);
+    else window.open(bookingToWhatsAppUrl(req), "_blank", "noopener");
+  };
+
+  // keep guests within what the chosen room sleeps
+  const pickRoom = (slug: string) => {
+    setRoomSlug(slug);
+    const r = rooms.find((x) => x.slug === slug);
+    if (r && guests > r.maxGuests) setGuests(r.maxGuests);
   };
 
   return (
@@ -82,17 +91,17 @@ function BookingForm({ initialRoom }: { initialRoom: string }) {
       <label className="field">
         <span>Guests</span>
         <select value={guests} onChange={(e) => setGuests(Number(e.target.value))}>
-          {Array.from({ length: 8 }, (_, i) => i + 1).map((n) => (
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
       </label>
       <label className="field">
         <span>Room</span>
-        <select value={roomSlug} onChange={(e) => setRoomSlug(e.target.value)}>
-          <option value="">Any</option>
+        <select value={roomSlug} onChange={(e) => pickRoom(e.target.value)}>
+          <option value="">Any room</option>
           {rooms.map((r) => (
-            <option key={r.slug} value={r.slug}>{r.name}</option>
+            <option key={r.slug} value={r.slug}>{r.name} · up to {r.maxGuests}</option>
           ))}
         </select>
       </label>
@@ -105,8 +114,16 @@ function BookingForm({ initialRoom }: { initialRoom: string }) {
         <input type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91" />
       </label>
 
-      <button type="submit" className="btn-gold col-span-2 mt-3">Send on WhatsApp</button>
-      <p className="col-span-2 text-center text-xs text-ivory/50">We reply with rates and confirm your room.</p>
+      <button type="submit" value="whatsapp" className="btn-gold col-span-2 mt-3">Send on WhatsApp</button>
+      <button type="submit" value="email" className="btn-ghost col-span-2">Send by email</button>
+      <p className="col-span-2 text-center text-xs leading-relaxed text-ivory/55">
+        We reply with rates and confirm your room.
+        <br />
+        Travel agents and groups:{" "}
+        <a href={`mailto:${hotel.email}`} className="text-gold-bright underline-offset-2 hover:underline">
+          {hotel.email}
+        </a>
+      </p>
     </form>
   );
 }

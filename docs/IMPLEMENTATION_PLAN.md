@@ -43,7 +43,12 @@ Copy rule: headings of 1–4 words, subheadings of one short line.
 
 1. **Navbar**: transparent over the hero, turns frosted-glass after scrolling. Logo on the left (gold knot turns on hover), 5 links (Rooms · Dining · Experiences · Gallery · Find us), and a call button. Hamburger menu on mobile.
 2. **Hero**: the hotel walk-through video plays forward only while you scroll (scroll-scrubbed) and pauses when you stop. On desktop it sits in a 3D card over a blurred copy of itself, with a chapter rail; on phones it fills the screen. Chapters: *"Welcome. Where Darjeeling begins."* → *"Food. Expert chef. Room service or restaurant."* → *"Information desk. Book trending tours at the desk."* (plus airport/station pickups) → *"Rest. Warm escapes for chilly nights."*
-3. **Rooms**: a 3D ring of room cards that turns as you scroll and can be dragged. Heading *"Rest well."*
+3. **Rooms**: a 3D carousel of the four room types (front card faces you, the rest fan out in depth); advances as you scroll and can be dragged. Heading *"Stay your way."*
+   - **The King**: single/double occupancy, double bed (12 rooms; TV in 305, 313, 314)
+   - **The Triple**: 3 beds (6 rooms; TV in 304, 306, 312)
+   - **The Quad**: 4 beds, TV (6 rooms)
+   - **Large Family Room**: suite, 6 beds, or a group room (1 room: 324)
+   The full 25-room list from the daily booking room chart is in `roomInventory` (`site.ts`).
 4. **Dining**: restaurant photos on cards that tilt in 3D under the cursor. Heading *"Eat in."*
 5. **Experiences**: tour packages with a car and driver. The lobby tour-wall photo sits beside a numbered list of tours (stops, duration, price); each one opens a pre-filled WhatsApp enquiry. Heading *"Go further."*
 6. **Gallery**: a WebGL fly-through where photos float in depth and the camera moves forward as you scroll. Heading *"Take a look."*, ending on *"See you soon. Waiting to serve."*
@@ -62,9 +67,11 @@ Performance and accessibility:
 ## 4. Phase 2: Supabase
 
 Tables:
-- `rooms` (id, slug, name, beds, max_guests, price_from, images[], sort)
+- `rooms` (id, slug, name, occupancy, beds, max_guests, price_from, images[], sort): the four room types
+- `room_units` (no, room_slug, tv, floor, active): the 25 physical rooms (seed from `roomInventory`)
 - `gallery` (id, image_path, alt, category, sort)
-- `booking_requests` (id, created_at, name, phone, email, check_in, check_out, guests, room_slug, status)
+- `booking_requests` (id, created_at, name, phone, email, check_in, check_out, guests, room_slug, source [web/whatsapp/email/agent], status)
+- `room_assignments` (booking_id, room_no, date): which physical room a confirmed booking gets each night (replaces the paper daily chart)
 - `tours` (id, slug, name, line, stops[], duration, price_from, image_path, active, sort)
 - `vehicles` (id, name, seats, price_per_day, image_path): the car options offered with tours
 - `drivers` (id, name, phone, languages[], active): staff only, never public
@@ -95,5 +102,8 @@ Then on vercel.com: **Add New → Project → import `Mainali_hospitality`**. Th
 - [ ] Confirm the hotel offers the tours listed (taken from the lobby tour wall)
 - [ ] Confirm phone and WhatsApp numbers (read from the signage: 98327 19783 / 62945 63420).
 - [ ] Exact address and Google Maps pin.
-- [ ] Room types and starting prices.
+- [x] Room types (King, Triple, Quad, Large Family Room) and the 25-room chart
+- [ ] Starting price per room type
+- [ ] What "CP" means on room CP318
+- [x] Reservations email: reservations@mainalihotels.com
 - [ ] Domain name.

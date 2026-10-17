@@ -12,7 +12,7 @@ export function Experiences() {
         <Reveal className="text-center md:text-left">
           <p className="eyebrow">Experiences</p>
           <h2 className="h-section mt-3">Go further.</h2>
-          <p className="sub mt-3">Tours with a car and driver, from our door.</p>
+          <p className="sub mt-3">Trending tours with a car and driver, booked at our desk.</p>
         </Reveal>
 
         <div className="mt-14 grid gap-10 md:grid-cols-[0.85fr_1.15fr] md:gap-14">
@@ -26,7 +26,7 @@ export function Experiences() {
                 sizes="(min-width: 768px) 40vw, 90vw"
                 className="object-cover"
               />
-              <span className="exp-photo-label">Pick a tour at the front desk, or ask us now.</span>
+              <span className="exp-photo-label">Pick a tour at the desk, or ask us on WhatsApp.</span>
             </div>
             <ul className="mt-5 flex flex-wrap gap-2">
               {tourIncludes.map((t) => (

@@ -355,43 +355,41 @@ body {
   .hero-rail li[data-active="true"] span { color: var(--color-gold-bright); }
 }
 
-/* ------------------------------------------------------------------ rooms ring */
-.ring-stage {
+/* ------------------------------------------------------------------ rooms 3D carousel */
+.flow-stage {
+  --card-w: 300px;
   position: relative;
   flex: 1;
-  perspective: 1500px;
-  perspective-origin: 50% 40%;
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+  transform-style: preserve-3d;
   touch-action: pan-y;
   cursor: grab;
   user-select: none;
 }
-.ring-stage:active { cursor: grabbing; }
-.ring {
-  --card-w: 290px;
+.flow-stage:active { cursor: grabbing; }
+.flow-card {
   position: absolute;
-  left: 50%; top: 50%;
+  left: 50%;
+  top: 50%;
   width: var(--card-w);
   height: calc(var(--card-w) * 1.3);
   margin-left: calc(var(--card-w) / -2);
   margin-top: calc(var(--card-w) * -0.65);
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-.ring-card {
-  position: absolute;
-  inset: 0;
   overflow: hidden;
-  border-radius: 1.1rem;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  box-shadow: 0 30px 60px -25px rgba(0,0,0,.8);
+  border-radius: 1.2rem;
   text-align: left;
+  box-shadow: 0 40px 70px -30px rgba(0,0,0,.85), 0 0 0 1px rgba(243,237,226,.08);
+  will-change: transform, opacity;
 }
-.ring-card img { pointer-events: none; }
-.ring-card-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,16,13,.85), transparent 55%); }
-.ring-card-label { position: absolute; left: 1.1rem; right: 1.1rem; bottom: 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.flow-card img { pointer-events: none; }
+.ring-card-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,16,13,.9), rgba(18,16,13,.2) 50%, transparent 65%); }
+.ring-card-label { position: absolute; left: 1.2rem; right: 1.2rem; bottom: 1.1rem; display: flex; flex-direction: column; gap: 0.3rem; }
 .room-line { animation: lineIn 0.6s cubic-bezier(.2,.8,.2,1); }
 @keyframes lineIn { from { opacity: 0; transform: translateY(10px); } }
+.flow-dots { display: flex; gap: 6px; }
+.flow-dots span { width: 6px; height: 6px; border-radius: 999px; background: rgba(243,237,226,.25); transition: width .4s, background .4s; }
+.flow-dots span[data-on="true"] { width: 22px; background: var(--color-gold); }
 
 /* ------------------------------------------------------------------ dining tilt */
 .tilt { perspective: 1000px; }
@@ -494,6 +492,25 @@ body {
 }
 .exp-row:hover .exp-cta { color: var(--color-gold-bright); transform: translateX(4px); }
 @media (min-width: 640px) { .exp-meta { display: flex; } }
+
+/* ------------------------------------------------------------------ contact details */
+.contact-grid {
+  display: grid;
+  gap: 1.5rem 2rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid rgba(243,237,226,.1);
+}
+@media (min-width: 480px) { .contact-grid { grid-template-columns: 1fr 1fr; } }
+.contact-grid dt {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+.contact-grid dd { margin-top: 0.45rem; font-size: 0.92rem; line-height: 1.55; color: rgba(243,237,226,.88); }
+.contact-grid a { transition: color .25s; }
+.contact-grid a:hover { color: var(--color-gold-bright); }
 
 /* ------------------------------------------------------------------ reveal */
 .reveal { opacity: 0; transform: translateY(36px); transition: opacity 1s cubic-bezier(.2,.8,.2,1), transform 1.1s cubic-bezier(.2,.8,.2,1); }

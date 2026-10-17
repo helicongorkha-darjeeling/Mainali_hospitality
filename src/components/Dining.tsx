@@ -49,7 +49,7 @@ export function Dining() {
         <Reveal className="text-center">
           <p className="eyebrow !text-gold-deep">Dining</p>
           <h2 className="h-section mt-3">Eat in.</h2>
-          <p className="sub mt-3 !text-ink/60">Our restaurant, right downstairs.</p>
+          <p className="sub mt-3 !text-ink/60">Expert chef. Room service or restaurant.</p>
         </Reveal>
         <div className="mt-16 grid gap-6 md:grid-cols-3 md:gap-8">
           {dining.map((d, i) => (

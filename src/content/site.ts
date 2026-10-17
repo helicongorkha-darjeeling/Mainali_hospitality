@@ -11,7 +11,7 @@ export const hotel = {
   // TODO(client): confirm both numbers (read from the hotel signage).
   phones: ["+91 98327 19783", "+91 62945 63420"],
   whatsapp: "919832719783",
-  email: "",
+  email: "reservations@mainalihotels.com", // reservations: guests, travel agents, groups
   mapQuery: "Teesta Hotel Bus Stand Darjeeling",
   heroVideo: "/video/hero.mp4", // 720p, desktop
   heroVideoMobile: "/video/hero-mobile.mp4", // 540p, phones and data-saver
@@ -51,28 +51,89 @@ export const nav = [
   { label: "Find us", href: "#find-us" },
 ];
 
+export type RoomSlug = "king" | "triple" | "quad" | "family";
+
 export type Room = {
-  slug: string;
+  slug: RoomSlug;
   name: string;
-  guests: number;
-  line: string;
-  image: string;
+  occupancy: string; // who it suits
+  line: string; // short tagline
+  beds: number;
+  maxGuests: number;
+  features: string[];
+  image: string; // card photo
+  images: string[]; // extra photos for the booking flow
 };
 
+/** The four room types, as on the Teesta occupancy chart. */
 export const rooms: Room[] = [
-  { slug: "double", name: "Double", guests: 2, line: "For two.", image: "/images/teesta-double-room.webp" },
-  { slug: "double-window", name: "Double, window", guests: 2, line: "Hill light in the morning.", image: "/images/teesta-double-room-window.webp" },
-  { slug: "triple", name: "Triple", guests: 3, line: "Room for one more.", image: "/images/teesta-triple-room.webp" },
-  { slug: "family", name: "Family", guests: 4, line: "The whole family, together.", image: "/images/teesta-family-room.webp" },
-  { slug: "family-lounge", name: "Family lounge", guests: 4, line: "Beds, plus a sofa.", image: "/images/teesta-family-sofa-room.webp" },
-  { slug: "four-bed", name: "Four-bed", guests: 4, line: "Friends on a trip.", image: "/images/teesta-four-person-room.webp" },
-  { slug: "group", name: "Group", guests: 6, line: "Big groups, one room.", image: "/images/teesta-multi-bed-room.webp" },
+  {
+    slug: "king",
+    name: "The King",
+    occupancy: "Single or double occupancy",
+    line: "Made for two.",
+    beds: 1,
+    maxGuests: 2,
+    features: ["Double bed", "1–2 guests", "TV in select rooms"],
+    image: "/images/teesta-double-room.webp",
+    images: ["/images/teesta-double-room-window.webp", "/images/teesta-double-room-bedside.webp", "/images/teesta-double-room-interior.webp"],
+  },
+  {
+    slug: "triple",
+    name: "The Triple",
+    occupancy: "3 beds",
+    line: "Room for one more.",
+    beds: 3,
+    maxGuests: 3,
+    features: ["3 beds", "Up to 3 guests", "TV in select rooms"],
+    image: "/images/teesta-triple-room.webp",
+    images: ["/images/teesta-multi-bed-room.webp"],
+  },
+  {
+    slug: "quad",
+    name: "The Quad",
+    occupancy: "4 beds",
+    line: "Bring the whole crew.",
+    beds: 4,
+    maxGuests: 4,
+    features: ["4 beds", "Up to 4 guests", "TV"],
+    image: "/images/teesta-family-room.webp",
+    images: ["/images/teesta-four-person-room.webp"],
+  },
+  {
+    slug: "family",
+    name: "Large Family Room",
+    occupancy: "Suite · 6 beds · or a group room",
+    line: "Everyone, under one roof.",
+    beds: 6,
+    maxGuests: 6,
+    features: ["Suite", "6 beds", "Up to 6 guests", "Families & groups"],
+    image: "/images/teesta-family-sofa-room.webp",
+    images: ["/images/teesta-room-seating.webp"],
+  },
+];
+
+/**
+ * Every room in the hotel, from the daily booking room chart (25 rooms, 3rd floor numbering).
+ * Not shown on the site; used by the booking flow (phase 2: Supabase `room_units`).
+ */
+export const roomInventory: { no: string; type: RoomSlug; tv: boolean }[] = [
+  { no: "301", type: "king", tv: false }, { no: "302", type: "king", tv: false }, { no: "303", type: "king", tv: false },
+  { no: "304", type: "triple", tv: true }, { no: "305", type: "king", tv: true }, { no: "306", type: "triple", tv: true },
+  { no: "307", type: "quad", tv: true }, { no: "308", type: "quad", tv: true }, { no: "309", type: "quad", tv: true },
+  { no: "310", type: "king", tv: false }, { no: "311", type: "king", tv: false }, { no: "312", type: "triple", tv: true },
+  { no: "313", type: "king", tv: true }, { no: "314", type: "king", tv: true }, { no: "315", type: "quad", tv: true },
+  { no: "316", type: "quad", tv: true }, { no: "317", type: "quad", tv: true },
+  { no: "CP318", type: "triple", tv: false }, // TODO(client): what does "CP" mean on the chart?
+  { no: "319", type: "king", tv: false }, { no: "320", type: "king", tv: false }, { no: "321", type: "king", tv: false },
+  { no: "322", type: "king", tv: false }, { no: "323", type: "triple", tv: false }, { no: "324", type: "family", tv: false },
+  { no: "325", type: "triple", tv: false },
 ];
 
 export const dining = [
   { title: "Teesta Restaurant", line: "Right downstairs.", image: "/images/restruant-full.webp" },
-  { title: "Warm tables", line: "Hot meals after a cold day.", image: "/images/teesta-dining.webp" },
-  { title: "Quiet corners", line: "Tea, slowly.", image: "/images/restraunt-2.webp" },
+  { title: "Hot plates", line: "Fresh from the kitchen, after a cold day.", image: "/images/teesta-dining.webp" },
+  { title: "Slow mornings", line: "Tea, toast and no rush.", image: "/images/restraunt-2.webp" },
 ];
 
 /**

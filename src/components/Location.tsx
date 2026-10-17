@@ -1,46 +1,60 @@
 import Image from "next/image";
 import { hotel } from "@/content/site";
+import { reservationsMailto } from "@/lib/booking";
 import { Reveal } from "./Reveal";
+
+const tel = (p: string) => `tel:${p.replace(/\s/g, "")}`;
+const waDisplay = `+${hotel.whatsapp.slice(0, 2)} ${hotel.whatsapp.slice(2, 7)} ${hotel.whatsapp.slice(7)}`;
 
 export function Location() {
   const map = `https://www.google.com/maps?q=${encodeURIComponent(hotel.mapQuery)}&output=embed`;
+  const directions = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.mapQuery)}`;
+
   return (
     <section id="find-us" className="relative bg-ink px-5 py-28 sm:px-8 sm:py-36">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-[1fr_1.2fr]">
+      <div className="mx-auto grid max-w-6xl items-start gap-12 md:grid-cols-[1fr_1.15fr]">
         <Reveal>
           <p className="eyebrow">Location</p>
           <h2 className="h-section mt-3">Find us.</h2>
           <p className="sub mt-3">Just 50 seconds from the bus stand.</p>
 
-          <dl className="mt-10 space-y-6 text-sm">
+          {/* contact details */}
+          <dl className="contact-grid mt-10">
             <div>
-              <dt className="eyebrow !text-[0.65rem]">Address</dt>
-              <dd className="mt-1 text-ivory/85">{hotel.address}</dd>
+              <dt>Address</dt>
+              <dd>
+                {hotel.name}
+                <br />
+                {hotel.address}
+              </dd>
             </div>
             <div>
-              <dt className="eyebrow !text-[0.65rem]">Call</dt>
-              <dd className="mt-1 flex flex-col gap-1">
+              <dt>Front desk</dt>
+              <dd className="flex flex-col">
                 {hotel.phones.map((p) => (
-                  <a key={p} href={`tel:${p.replace(/\s/g, "")}`} className="text-ivory/85 hover:text-gold-bright">
-                    {p}
-                  </a>
+                  <a key={p} href={tel(p)}>{p}</a>
                 ))}
+              </dd>
+            </div>
+            <div>
+              <dt>WhatsApp</dt>
+              <dd>
+                <a href={`https://wa.me/${hotel.whatsapp}`} target="_blank" rel="noopener">{waDisplay}</a>
+              </dd>
+            </div>
+            <div className="min-[480px]:col-span-2">
+              <dt>Reservations</dt>
+              <dd>
+                <a href={reservationsMailto()} className="[overflow-wrap:anywhere]">{hotel.email}</a>
+                <span className="mt-1 block text-xs text-ivory/50">Guests, travel agents and groups</span>
               </dd>
             </div>
           </dl>
 
           <div className="mt-10 flex flex-wrap gap-3">
-            <a href={`tel:${hotel.phones[0].replace(/\s/g, "")}`} className="btn-ghost">
-              Call the front desk
-            </a>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.mapQuery)}`}
-              target="_blank"
-              rel="noopener"
-              className="btn-ghost"
-            >
-              Get directions
-            </a>
+            <a href={tel(hotel.phones[0])} className="btn-ghost">Call the front desk</a>
+            <a href={directions} target="_blank" rel="noopener" className="btn-ghost">Get directions</a>
+            <a href={reservationsMailto()} className="btn-ghost">Email reservations</a>
           </div>
         </Reveal>
 
