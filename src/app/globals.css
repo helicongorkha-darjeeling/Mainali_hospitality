@@ -255,7 +255,8 @@ body {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: rgba(243,237,226,.82);
+  color: rgba(243,237,226,.85);
+  text-shadow: 0 1px 12px rgba(0,0,0,.65), 0 0 2px rgba(0,0,0,.4);
 }
 .hero-note {
   margin-top: 0.9rem;
@@ -321,6 +322,13 @@ body {
     text-align: left;
   }
   .hero-title { font-size: clamp(3.2rem, 5.6vw, 6.4rem); }
+  /* soft fade behind the chapter text so it reads over bright frames */
+  .hero-chapters::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(18,16,13,.7) 0%, rgba(18,16,13,.35) 32%, transparent 52%);
+  }
   .hero-rail {
     position: absolute;
     right: max(1.5rem, 4vw);
