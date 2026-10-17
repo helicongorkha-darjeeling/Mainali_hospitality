@@ -20,7 +20,9 @@ import {
   todayISO,
   totalCapacity,
   totalRooms,
+  upiAppLinks,
   upiLink,
+  detectPlatform,
   type RoomQty,
 } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
@@ -65,6 +67,24 @@ export function BookingFlow() {
   const [agreed, setAgreed] = useState(false);
   const [bookingId, setBookingId] = useState("");
   const [utr, setUtr] = useState("");
+  const [platform] = useState(detectPlatform);
+  const [paying, setPaying] = useState(false);
+  const [returned, setReturned] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+
+  // When the guest comes back from their UPI app, ask them to confirm.
+  useEffect(() => {
+    if (!paying) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        setReturned(true);
+        document.getElementById("pay-confirm")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [paying]);
+  const startPay = () => setPaying(true);
 
   const nights = nightsBetween(checkIn, checkOut);
   const q = useMemo(() => quote(qty, guests, nights, plan), [qty, guests, nights, plan]);
@@ -110,7 +130,7 @@ export function BookingFlow() {
     `Rooms: ${describeRooms(qty)}`,
     `Meal plan: ${mealName} (${plan})`,
     `Total paid: ${inr(q.total)} via UPI`,
-    `UPI reference (UTR): ${utr}`,
+    `UPI reference (UTR): ${utr || "not entered"}`,
     notes && `Requests: ${notes}`,
   ].filter(Boolean) as string[];
 
@@ -291,28 +311,63 @@ export function BookingFlow() {
             <>
               <button type="button" className="bk-back" onClick={() => go("review")}>← Back to review</button>
               <h1 className="bk-h1">Pay {inr(q.total)}</h1>
-              <p className="text-sm text-ivory/65">Booking ID <b className="text-ivory">{bookingId}</b> · pay with any UPI app</p>
+              <p className="text-sm text-ivory/65">Booking ID <b className="text-ivory">{bookingId}</b> · Google Pay, PhonePe, Paytm or any UPI app</p>
 
               <div className="bk-panel bk-pay">
-                <UpiQr link={upiLink(q.total, bookingId)} />
-                <div className="bk-pay-side">
-                  <a href={upiLink(q.total, bookingId)} className="btn-gold bk-pay-app">Pay {inr(q.total)} with UPI app</a>
-                  <p className="bk-pay-apps">Google Pay · PhonePe · Paytm · BHIM</p>
-                  <div className="bk-payee">
-                    <p className="ticket-label !text-gold">Paying to</p>
-                    <p className="text-ivory">{upi.payeeName}</p>
-                    <CopyText text={upi.vpa} />
+                {platform === "desktop" ? (
+                  <div className="bk-pay-desk">
+                    <p className="bk-h3">Pay from your phone</p>
+                    <p className="text-sm text-ivory/70">
+                      Open this page on your phone and tap <b>Pay now</b>: Google Pay, PhonePe or Paytm opens with the amount filled in.
+                    </p>
+                    <button type="button" className="bk-qr-toggle" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr}>
+                      {showQr ? "Hide QR code" : "Can't switch devices? Show a QR code"}
+                    </button>
+                    {showQr && <UpiQr link={upiLink(q.total, bookingId)} />}
                   </div>
-                  <p className="text-xs text-ivory/55">On a computer, scan the QR with your phone. On a phone, tap the button.</p>
+                ) : (
+                  <div className="bk-pay-phone">
+                    <a
+                      href={platform === "android" ? upiLink(q.total, bookingId) : upiAppLinks(q.total, bookingId, platform)[0].href}
+                      onClick={startPay}
+                      className="btn-gold bk-paynow"
+                    >
+                      Pay {inr(q.total)} now
+                    </a>
+                    <p className="bk-pay-hint">
+                      {platform === "android" ? "Opens your UPI apps. Or pick one:" : "Opens Google Pay. Or pick another app:"}
+                    </p>
+                    <div className="bk-apps">
+                      {upiAppLinks(q.total, bookingId, platform).map((app) => (
+                        <a key={app.id} href={app.href} onClick={startPay} className="bk-app" data-app={app.id}>
+                          <span className="bk-app-dot" aria-hidden>{app.name[0]}</span>
+                          {app.name}
+                        </a>
+                      ))}
+                      <a href={upiLink(q.total, bookingId)} onClick={startPay} className="bk-app">
+                        <span className="bk-app-dot" aria-hidden>₹</span>
+                        Other UPI app
+                      </a>
+                    </div>
+                  </div>
+                )}
+                <div className="bk-payee">
+                  <p className="ticket-label !text-gold">Paying to</p>
+                  <p className="text-ivory">{upi.payeeName}</p>
+                  <CopyText text={upi.vpa} />
                 </div>
               </div>
 
-              <form className="bk-panel" onSubmit={confirm}>
-                <p className="bk-h3">After paying</p>
-                <label className="field">
-                  <span>UPI reference number (UTR)</span>
+              <form id="pay-confirm" className="bk-panel" data-returned={returned} onSubmit={confirm}>
+                <p className="bk-h3">{returned ? "Payment done?" : "After paying"}</p>
+                <p className="text-sm text-ivory/70">
+                  {returned
+                    ? "If your app shows the payment as successful, confirm your booking below."
+                    : "Come back here when your app shows the payment as successful."}
+                </p>
+                <label className="field mt-4">
+                  <span>UPI reference (optional, speeds up confirmation)</span>
                   <input
-                    required
                     inputMode="numeric"
                     pattern="[A-Za-z0-9]{10,22}"
                     title="The 12-digit UPI reference / UTR from your payment app"
@@ -321,7 +376,6 @@ export function BookingFlow() {
                     onChange={(e) => setUtr(e.target.value.replace(/\s/g, ""))}
                   />
                 </label>
-                <p className="mt-2 text-xs text-ivory/55">Find it in your UPI app under the payment details. We match it to your booking.</p>
                 <button type="submit" className="btn-gold mt-4 w-full">I&apos;ve paid · confirm booking</button>
               </form>
             </>

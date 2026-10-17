@@ -151,20 +151,33 @@
 .bk-agree a { color: var(--color-gold-bright); text-decoration: underline; text-underline-offset: 2px; }
 
 /* payment */
-.bk-pay { display: grid; gap: 1.5rem; }
-@media (min-width: 640px) { .bk-pay { grid-template-columns: 220px 1fr; align-items: center; } }
-.bk-qr { display: none; text-align: center; }
+.bk-pay { display: flex; flex-direction: column; gap: 1.25rem; }
+.bk-paynow { display: block; text-align: center; font-size: 0.95rem; padding: 1.15rem 1.5rem; }
+.bk-pay-hint { margin-top: 0.9rem; font-size: 0.75rem; color: rgba(243,237,226,.6); text-align: center; }
+.bk-apps { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
+.bk-app {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.8rem 0.9rem; border-radius: 0.9rem;
+  border: 1px solid rgba(243,237,226,.14); background: rgba(243,237,226,.04);
+  font-size: 0.88rem; font-weight: 600;
+  transition: border-color .2s, background .2s;
+}
+.bk-app:active, .bk-app:hover { border-color: var(--color-gold); background: rgba(173,162,135,.1); }
+.bk-app-dot { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 0.55rem; font-size: 0.8rem; font-weight: 800; color: #fff; background: #3a342b; flex: none; }
+.bk-app[data-app="gpay"] .bk-app-dot { background: #1a73e8; }
+.bk-app[data-app="phonepe"] .bk-app-dot { background: #5f259f; }
+.bk-app[data-app="paytm"] .bk-app-dot { background: #00baf2; }
+.bk-pay-desk { display: flex; flex-direction: column; gap: 0.6rem; }
+.bk-qr-toggle { align-self: flex-start; font-size: 0.78rem; color: var(--color-gold-bright); text-decoration: underline; text-underline-offset: 3px; }
+.bk-qr { width: 200px; text-align: center; }
 .bk-qr > div:first-child { padding: 0.6rem; border-radius: 1rem; background: var(--color-ivory); }
 .bk-qr svg { width: 100%; height: auto; display: block; }
 .bk-qr-wait { aspect-ratio: 1; border-radius: 0.6rem; background: rgba(18,16,13,.08); }
 .bk-qr p { margin-top: 0.5rem; font-size: 0.72rem; color: rgba(243,237,226,.6); }
-@media (min-width: 640px) { .bk-qr { display: block; } }
-.bk-pay-side { display: flex; flex-direction: column; gap: 0.9rem; }
-.bk-pay-app { text-align: center; }
-.bk-pay-apps { font-size: 0.72rem; color: rgba(243,237,226,.55); text-align: center; }
 .bk-payee { padding: 0.8rem 1rem; border-radius: 0.8rem; background: rgba(243,237,226,.05); }
 .bk-copy { display: flex; justify-content: space-between; width: 100%; gap: 0.5rem; margin-top: 0.2rem; font-family: ui-monospace, monospace; font-size: 0.85rem; color: var(--color-gold-bright); }
 .bk-copy span { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(243,237,226,.6); }
+#pay-confirm[data-returned="true"] { border-color: var(--color-gold); box-shadow: 0 0 0 4px rgba(173,162,135,.15); }
 
 /* direct-booking thank-you */
 .bk-direct { border-color: rgba(111,211,155,.45); background: linear-gradient(135deg, rgba(111,211,155,.12), transparent 65%); }

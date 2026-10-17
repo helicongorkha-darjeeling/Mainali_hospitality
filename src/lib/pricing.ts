@@ -162,6 +162,39 @@ export function newBookingId() {
   return `TST-${ymd}-${Array.from(bytes, (b) => abc[b % abc.length]).join("")}`;
 }
 
-/** Standard UPI deep link; opens GPay / PhonePe / Paytm / BHIM on phones. */
-export const upiLink = (amount: number, bookingId: string) =>
-  `upi://pay?pa=${encodeURIComponent(upi.vpa)}&pn=${encodeURIComponent(upi.payeeName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Booking ${bookingId}`)}`;
+/** The UPI payment request (payee, amount, note) shared by every app link. */
+const upiQuery = (amount: number, bookingId: string) =>
+  `pa=${encodeURIComponent(upi.vpa)}&pn=${encodeURIComponent(upi.payeeName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Booking ${bookingId}`)}`;
+
+/** Standard UPI link. On Android it opens the list of installed UPI apps. */
+export const upiLink = (amount: number, bookingId: string) => `upi://pay?${upiQuery(amount, bookingId)}`;
+
+export type Platform = "android" | "ios" | "desktop";
+
+export function detectPlatform(): Platform {
+  if (typeof navigator === "undefined") return "desktop";
+  const ua = navigator.userAgent;
+  if (/Android/i.test(ua)) return "android";
+  // iPadOS reports itself as a Mac; touch support gives it away.
+  if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "ios";
+  return "desktop";
+}
+
+/**
+ * One-tap links that open a specific UPI app.
+ * Android: an intent link with the app's package (opens the Play Store if the app isn't installed).
+ * iPhone: the app's own URL scheme (iOS has no UPI app picker).
+ */
+export function upiAppLinks(amount: number, bookingId: string, platform: Platform) {
+  const qs = upiQuery(amount, bookingId);
+  const apps = [
+    { id: "gpay", name: "Google Pay", android: "com.google.android.apps.nbu.paisa.user", ios: `tez://upi/pay?${qs}` },
+    { id: "phonepe", name: "PhonePe", android: "com.phonepe.app", ios: `phonepe://pay?${qs}` },
+    { id: "paytm", name: "Paytm", android: "net.one97.paytm", ios: `paytmmp://pay?${qs}` },
+  ];
+  return apps.map((a) => ({
+    id: a.id,
+    name: a.name,
+    href: platform === "android" ? `intent://pay?${qs}#Intent;scheme=upi;package=${a.android};end` : a.ios,
+  }));
+}
