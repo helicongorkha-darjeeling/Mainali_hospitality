@@ -257,6 +257,14 @@ body {
   text-transform: uppercase;
   color: rgba(243,237,226,.82);
 }
+.hero-note {
+  margin-top: 0.9rem;
+  max-width: 26rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(243,237,226,.72);
+  text-shadow: 0 2px 16px rgba(0,0,0,.5);
+}
 .hero-title-in { animation: heroIn 1.4s cubic-bezier(.16,1,.3,1) .35s both; }
 @keyframes heroIn { from { opacity: 0; transform: translateY(28px); } }
 

@@ -42,12 +42,12 @@ website/                        ← Git repo, deployed by Vercel
 Copy rule: headings of 1–4 words, subheadings of one short line.
 
 1. **Navbar**: transparent over the hero, turns frosted-glass after scrolling. Logo on the left (gold knot turns on hover), 5 links (Rooms · Dining · Experiences · Gallery · Find us), and a call button. Hamburger menu on mobile.
-2. **Hero**: the hotel walk-through video plays forward only while you scroll (scroll-scrubbed) and pauses when you stop. On desktop it sits in a 3D card over a blurred copy of itself, with a chapter rail; on phones it fills the screen. Chapters: *"Above the clouds."* → *"Eat."* → *"Explore."* → *"Rest."*
+2. **Hero**: the hotel walk-through video plays forward only while you scroll (scroll-scrubbed) and pauses when you stop. On desktop it sits in a 3D card over a blurred copy of itself, with a chapter rail; on phones it fills the screen. Chapters: *"Welcome. Where Darjeeling begins."* → *"Food. Expert chef. Room service or restaurant."* → *"Information desk. Book trending tours at the desk."* (plus airport/station pickups) → *"Rest. Warm escapes for chilly nights."*
 3. **Rooms**: a 3D ring of room cards that turns as you scroll and can be dragged. Heading *"Rest well."*
 4. **Dining**: restaurant photos on cards that tilt in 3D under the cursor. Heading *"Eat in."*
 5. **Experiences**: tour packages with a car and driver. The lobby tour-wall photo sits beside a numbered list of tours (stops, duration, price); each one opens a pre-filled WhatsApp enquiry. Heading *"Go further."*
-6. **Gallery**: a WebGL fly-through where photos float in depth and the camera moves forward as you scroll. Heading *"Take a look."*
-7. **Find us**: map, address, phone, WhatsApp. Heading *"At the bus stand."*
+6. **Gallery**: a WebGL fly-through where photos float in depth and the camera moves forward as you scroll. Heading *"Take a look."*, ending on *"See you soon. Waiting to serve."*
+7. **Find us**: map, address, phones, *Call the front desk* and *Get directions* buttons. Heading *"Find us. Just 50 seconds from the bus stand."*
 8. **Footer**: logo, contacts, © line.
 
 **Book now** button: fixed in the exact centre of the screen on every device and never moves. Transparent with a thin border at rest; turns gold on hover or focus. Over light sections it switches to dark text. It opens a booking sheet (dates, guests, room type) that currently sends a pre-filled WhatsApp message.

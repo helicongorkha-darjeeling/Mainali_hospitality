@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { tours, tourIncludes } from "@/content/site";
+import { hotel, tours, tourIncludes } from "@/content/site";
 import { tourToWhatsAppUrl } from "@/lib/booking";
 import { Reveal } from "./Reveal";
 
@@ -33,6 +33,7 @@ export function Experiences() {
                 <li key={t} className="exp-chip exp-chip-gold">{t}</li>
               ))}
             </ul>
+            <p className="mt-4 text-sm text-ivory/65">{hotel.pickup}</p>
           </Reveal>
 
           {/* tour list */}

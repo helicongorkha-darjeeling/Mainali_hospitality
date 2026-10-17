@@ -16,18 +16,31 @@ export const hotel = {
   heroVideo: "/video/hero.mp4", // 720p, desktop
   heroVideoMobile: "/video/hero-mobile.mp4", // 540p, phones and data-saver
   heroPoster: "/video/hero-poster.webp",
+  tagline: "Where Darjeeling begins.",
+  // TODO(client): confirm the station (the main one is New Jalpaiguri, NJP).
+  pickup: "Pickup from Bagdogra Airport, Jalpaiguri train station, Siliguri or Gangtok.",
+};
+
+export type HeroChapter = {
+  key: string;
+  label: string; // short name in the chapter rail
+  from: number;
+  to: number;
+  title: string;
+  sub: string;
+  note?: string; // optional extra line under the sub
 };
 
 /**
  * Text that appears while the hero video scrubs with scroll.
  * `from` / `to` are scroll progress (0 → 1) through the video; they line up with its scenes:
- * street + entrance (0–0.15), restaurant (0.16–0.29), wall of local sights (0.29–0.37), rooms (0.42–1).
+ * street + entrance (0–0.15), restaurant (0.16–0.29), wall of local sights + corridor (0.29–0.41), rooms (0.42–1).
  */
-export const heroChapters = [
-  { key: "arrive", label: "Arrive", from: 0, to: 0.12, title: "Above the clouds.", sub: "Hotel Teesta · Darjeeling" },
-  { key: "eat", label: "Eat", from: 0.17, to: 0.28, title: "Eat.", sub: "Our restaurant, downstairs." },
-  { key: "explore", label: "Explore", from: 0.3, to: 0.38, title: "Explore.", sub: "Tours from the lobby." },
-  { key: "rest", label: "Rest", from: 0.45, to: 0.9, title: "Rest.", sub: "Warm rooms for two to six." },
+export const heroChapters: HeroChapter[] = [
+  { key: "welcome", label: "Welcome", from: 0, to: 0.13, title: "Welcome.", sub: hotel.tagline },
+  { key: "food", label: "Food", from: 0.16, to: 0.28, title: "Food.", sub: "Expert chef. Room service or restaurant." },
+  { key: "desk", label: "Info desk", from: 0.3, to: 0.43, title: "Information desk.", sub: "Book trending tours at the desk.", note: hotel.pickup },
+  { key: "rest", label: "Rest", from: 0.47, to: 0.9, title: "Rest.", sub: "Warm escapes for chilly nights." },
 ];
 
 export const nav = [

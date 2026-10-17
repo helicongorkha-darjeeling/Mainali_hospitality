@@ -21,10 +21,10 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Hotel Teesta · Darjeeling",
-  description: "Warm rooms and a restaurant at the Darjeeling bus stand. By Mainali Hospitality.",
+  description: "Where Darjeeling begins. Warm rooms, an expert chef and trending tours, 50 seconds from the Darjeeling bus stand. By Mainali Hospitality.",
   openGraph: {
     title: "Hotel Teesta · Darjeeling",
-    description: "Above the clouds. Warm rooms at the Darjeeling bus stand.",
+    description: "Where Darjeeling begins. 50 seconds from the bus stand.",
     images: ["/images/teesta-hotel-under-the-blue-sky.webp"],
   },
 };

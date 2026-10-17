@@ -33,7 +33,7 @@ export function Gallery() {
 
         <div ref={outro} className="pointer-events-none absolute inset-x-0 top-[17%] flex flex-col items-center px-6 text-center opacity-0">
           <h2 className="h-section">See you soon.</h2>
-          <p className="sub mt-3">Darjeeling is waiting.</p>
+          <p className="sub mt-3">Waiting to serve.</p>
         </div>
 
         <div className="absolute inset-x-6 top-24 mx-auto h-px max-w-md bg-ivory/10 sm:top-28">

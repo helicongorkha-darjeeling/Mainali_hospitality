@@ -184,11 +184,15 @@ export function Hero() {
                 <img src="/brand/mainali-logo-intro-dark.svg" alt="Mainali Hospitality" className="mb-5 w-36 md:w-44" width={240} height={122} />
               )}
               {i === 0 ? (
-                <h1 className="hero-title hero-title-in">{c.title}</h1>
+                <h1 className="hero-title hero-title-in">
+                  {c.title}
+                  <span className="sr-only"> {hotel.name}, {hotel.city}</span>
+                </h1>
               ) : (
                 <h2 className="hero-title">{c.title}</h2>
               )}
               <p className="hero-sub">{c.sub}</p>
+              {c.note && <p className="hero-note">{c.note}</p>}
             </div>
           ))}
         </div>

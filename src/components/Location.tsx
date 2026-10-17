@@ -8,9 +8,9 @@ export function Location() {
     <section id="find-us" className="relative bg-ink px-5 py-28 sm:px-8 sm:py-36">
       <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-[1fr_1.2fr]">
         <Reveal>
-          <p className="eyebrow">Find us</p>
-          <h2 className="h-section mt-3">At the bus stand.</h2>
-          <p className="sub mt-3">Step off, walk in. The town is at your door.</p>
+          <p className="eyebrow">Location</p>
+          <h2 className="h-section mt-3">Find us.</h2>
+          <p className="sub mt-3">Just 50 seconds from the bus stand.</p>
 
           <dl className="mt-10 space-y-6 text-sm">
             <div>
@@ -30,8 +30,8 @@ export function Location() {
           </dl>
 
           <div className="mt-10 flex flex-wrap gap-3">
-            <a href={`https://wa.me/${hotel.whatsapp}`} target="_blank" rel="noopener" className="btn-ghost">
-              WhatsApp
+            <a href={`tel:${hotel.phones[0].replace(/\s/g, "")}`} className="btn-ghost">
+              Call the front desk
             </a>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.mapQuery)}`}
@@ -39,7 +39,7 @@ export function Location() {
               rel="noopener"
               className="btn-ghost"
             >
-              Directions
+              Get directions
             </a>
           </div>
         </Reveal>
