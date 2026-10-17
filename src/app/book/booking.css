@@ -166,6 +166,12 @@
 .bk-copy { display: flex; justify-content: space-between; width: 100%; gap: 0.5rem; margin-top: 0.2rem; font-family: ui-monospace, monospace; font-size: 0.85rem; color: var(--color-gold-bright); }
 .bk-copy span { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(243,237,226,.6); }
 
+/* direct-booking thank-you */
+.bk-direct { border-color: rgba(111,211,155,.45); background: linear-gradient(135deg, rgba(111,211,155,.12), transparent 65%); }
+.bk-direct .bk-h3 { color: #a6ecc4; }
+.bk-tip { margin-top: 0.8rem; font-size: 0.82rem; line-height: 1.55; color: rgba(243,237,226,.75); }
+.bk-tip span { display: inline-block; margin-right: 0.5rem; padding: 0.12rem 0.5rem; border-radius: 0.3rem; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #2a1b00; background: linear-gradient(120deg, #f6d27a, #e9b949); vertical-align: 1px; }
+
 /* mobile bottom bar */
 .bk-bar {
   position: fixed; inset: auto 0 0 0; z-index: 45;

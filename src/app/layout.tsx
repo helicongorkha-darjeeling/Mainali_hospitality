@@ -14,9 +14,8 @@ const manrope = Manrope({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "http://localhost:3000";
+// The live site is www.mainalihospitality.com (the bare domain redirects there).
+const siteUrl = process.env.VERCEL ? "https://www.mainalihospitality.com" : "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

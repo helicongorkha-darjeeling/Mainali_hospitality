@@ -80,3 +80,10 @@ export const frontDeskPerk = {
   title: "Your Darjeeling, planned at the front desk",
   body: "Our own travel guide and car fleet take in-house guests to the trending spots, for less than outside travel agencies.",
 };
+
+/** Shown on the confirmation screen. `{saved}` is replaced with the amount saved. */
+export const directThanks = {
+  title: "Thank you for booking direct.",
+  body: "You skipped the booking-site (OTA) commission, so you saved {saved} on this stay.",
+  tip: "Always book on the hotel's own website when it's available. You get the best price, and our team gives direct guests extra care.",
+};

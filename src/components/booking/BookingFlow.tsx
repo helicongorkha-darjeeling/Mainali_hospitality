@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
-import { frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
+import { directThanks, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
 import {
   addDays,
   allocateRooms,
@@ -333,6 +333,14 @@ export function BookingFlow() {
               <p className="eyebrow">Booking received</p>
               <h1 className="bk-h1">Thank you, {name.split(" ")[0] || "guest"}.</h1>
               <p className="text-ivory/70">We&apos;re checking your payment and will confirm on WhatsApp and email.</p>
+              <div className="bk-panel bk-direct">
+                <p className="bk-h3">{directThanks.title}</p>
+                <p className="text-sm text-ivory/80">{directThanks.body.replace("{saved}", inr(q.savings))}</p>
+                <p className="bk-tip">
+                  <span>Pro tip</span>
+                  {directThanks.tip}
+                </p>
+              </div>
               <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} bookingId={bookingId} />
               <div className="bk-panel">
                 <p className="bk-h3">Last step: send your booking to the hotel</p>
