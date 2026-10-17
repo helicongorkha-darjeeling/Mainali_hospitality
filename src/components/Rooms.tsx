@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { rooms } from "@/content/site";
+import { roomRates } from "@/content/booking";
+import { discountPct, inr } from "@/lib/pricing";
 import { useBooking } from "./BookingProvider";
 
 const N = rooms.length;
@@ -169,6 +171,10 @@ export function Rooms() {
         <div className="relative z-10 px-6 pb-24 text-center sm:pb-28">
           <div key={room.slug} className="room-line">
             <p className="font-display text-2xl italic text-gold-bright">{room.line}</p>
+            <p className="mt-1 text-sm text-ivory/80">
+              From <b className="text-ivory">{inr(roomRates[room.slug].direct)}</b> <s className="text-ivory/45">{inr(roomRates[room.slug].rack)}</s>{" "}
+              <span className="font-semibold text-emerald-300">{discountPct(room.slug)}% off</span> / night
+            </p>
             <ul className="mt-3 flex flex-wrap justify-center gap-1.5">
               {room.features.map((f) => (
                 <li key={f} className="exp-chip">{f}</li>

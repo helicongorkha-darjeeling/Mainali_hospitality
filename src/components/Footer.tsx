@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { hotel, nav } from "@/content/site";
+import { policyLinks } from "@/content/policies";
 
 export function Footer() {
   return (
@@ -23,7 +25,12 @@ export function Footer() {
           <a href={`mailto:${hotel.email}`} className="text-ivory/80 hover:text-gold-bright">
             {hotel.email}
           </a>
-          <p className="mt-3 text-xs text-ivory/40">© {new Date().getFullYear()} {hotel.brand}</p>
+          <p className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ivory/50 md:justify-end">
+            {policyLinks.map((l) => (
+              <Link key={l.slug} href={`/policies/${l.slug}`} className="hover:text-gold-bright">{l.label}</Link>
+            ))}
+          </p>
+          <p className="mt-2 text-xs text-ivory/40">© {new Date().getFullYear()} {hotel.brand}</p>
         </div>
       </div>
     </footer>

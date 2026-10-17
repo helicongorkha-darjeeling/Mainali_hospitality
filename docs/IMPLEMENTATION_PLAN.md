@@ -64,6 +64,18 @@ Performance and accessibility:
 - Images go through `next/image` (AVIF/WebP, responsive sizes).
 - Targets: Lighthouse ≥ 90 on mobile, LCP under 2.5 s.
 
+## 3b. Booking flow (built, phase 1)
+
+1. **Book Now form**: today / tomorrow by default; the guest count picks the best rooms (fewest rooms, then lowest price); name + phone; **Book** opens `/book`. Name and phone travel in sessionStorage, never in the URL.
+2. **/book, Rooms & meals**: every room type with its *Jackpot deal* price (direct vs published rate, % off, taxes per night), steppers capped by the 25-room inventory, meal plans EP (default) / CP +₹250 / MAP +₹500 / AP +₹750 per guest per night.
+3. **Review**: itinerary ticket (check-in 12 PM, check-out 11 AM), room features, front-desk tour perk, cancellation timeline, guest details with browser autofill (`autocomplete="name|tel|email"`), terms checkbox.
+4. **Payment**: UPI QR (desktop) + UPI app link (phone) to the configured UPI ID; the guest enters the UPI reference (UTR).
+5. **Confirmation**: booking ID; the guest sends the booking to the hotel on WhatsApp or email.
+
+Settings live in `src/content/booking.ts` (rates, meal plans, GST tiers, stay times, cancellation rules, UPI ID, amenities). Policies: `/policies/booking-terms`, `/policies/cancellation`, `/policies/privacy` (`src/content/policies.ts`).
+
+Phase 2 replaces the manual parts: live availability + holds, payment gateway with automatic confirmation (Razorpay / PhonePe PG / Cashfree), bookings saved to Supabase, confirmation emails. The Kiran project (`Clients/Kiran`) already has a Supabase booking backend with holds and Google sign-in that can be adapted.
+
 ## 4. Phase 2: Supabase
 
 Tables:
@@ -103,7 +115,12 @@ Then on vercel.com: **Add New → Project → import `Mainali_hospitality`**. Th
 - [ ] Confirm phone and WhatsApp numbers (read from the signage: 98327 19783 / 62945 63420).
 - [ ] Exact address and Google Maps pin.
 - [x] Room types (King, Triple, Quad, Large Family Room) and the 25-room chart
-- [ ] Starting price per room type
+- [ ] Confirm prices per room type (placeholders except The King: ₹1,868 direct / ₹4,399 published)
+- [ ] Meal plan pricing: per guest per night (as built) or per room?
+- [ ] GST rates with the accountant (built: 5% rooms ≤ ₹7,500/night, 5% meals)
+- [ ] Approve the cancellation schedule (draft: full refund ≥48 h, 50% 24–48 h, none <24 h)
+- [ ] Merchant UPI ID or payment gateway (test UPI ID is a personal one)
+- [ ] Check-in 12 PM / check-out 11 AM (from the OTA listing)
 - [ ] What "CP" means on room CP318
 - [x] Reservations email: reservations@mainalihotels.com
 - [ ] Domain name.
