@@ -13,7 +13,8 @@ export const hotel = {
   whatsapp: "919832719783",
   email: "",
   mapQuery: "Teesta Hotel Bus Stand Darjeeling",
-  heroVideo: "/video/hero.mp4",
+  heroVideo: "/video/hero.mp4", // 720p, desktop
+  heroVideoMobile: "/video/hero-mobile.mp4", // 540p, phones and data-saver
   heroPoster: "/video/hero-poster.webp",
 };
 

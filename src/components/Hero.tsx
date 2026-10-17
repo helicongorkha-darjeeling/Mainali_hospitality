@@ -32,22 +32,31 @@ export function Hero() {
     const sec = section.current;
     if (!v || !sec) return;
 
-    let objectUrl: string | null = null;
     let ready = false;
-    let cancelled = false;
+    let retries = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-    // Load the whole (small) file into memory: seeking a local blob is instant, so scrubbing stays smooth.
-    fetch(hotel.heroVideo)
-      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
-      .then((blob) => {
-        if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        v.src = objectUrl;
+    // Stream the video (the browser fetches byte ranges as you scrub, so it works before the
+    // whole file has arrived). Phones and data-saver mode get the lighter 540p file.
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    const small = window.matchMedia("(max-width: 767px)").matches || conn?.saveData === true;
+    const src = small ? hotel.heroVideoMobile : hotel.heroVideo;
+    v.src = src;
+    v.load();
+
+    // Flaky mobile networks drop downloads: retry a few times, backing off.
+    const onError = () => {
+      if (retries >= 4) return;
+      retries += 1;
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => {
+        const t = v.currentTime;
+        v.src = `${src}?r=${retries}`;
         v.load();
-      })
-      .catch(() => {
-        v.src = hotel.heroVideo; // fall back to streaming
-      });
+        v.currentTime = t;
+      }, 1500 * retries);
+    };
+    v.addEventListener("error", onError);
 
     const onMeta = () => {
       ready = true;
@@ -127,13 +136,13 @@ export function Hero() {
     raf = requestAnimationFrame(loop);
 
     return () => {
-      cancelled = true;
       cancelAnimationFrame(raf);
+      clearTimeout(retryTimer);
       window.removeEventListener("pointermove", onPointer);
+      v.removeEventListener("error", onError);
       v.removeEventListener("loadedmetadata", onMeta);
       v.removeEventListener("seeked", paintBackdrop);
       v.removeEventListener("loadeddata", paintBackdrop);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, []);
 

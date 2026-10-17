@@ -19,5 +19,13 @@ run([
   "-g", "5", "-keyint_min", "5", "-sc_threshold", "0", "-movflags", "+faststart",
   "public/video/hero.mp4",
 ]);
+// Lighter 540p copy for phones and data-saver mode.
+run([
+  "-i", src, "-t", keep, "-an",
+  "-vf", "scale=540:960:flags=lanczos,fps=30",
+  "-c:v", "libx264", "-preset", "slow", "-crf", "30", "-profile:v", "high", "-pix_fmt", "yuv420p",
+  "-g", "6", "-keyint_min", "6", "-sc_threshold", "0", "-movflags", "+faststart",
+  "public/video/hero-mobile.mp4",
+]);
 run(["-i", src, "-frames:v", "1", "-vf", "scale=720:1280:flags=lanczos", "-c:v", "libwebp", "-quality", "80", "public/video/hero-poster.webp"]);
-console.log("Wrote public/video/hero.mp4 and hero-poster.webp");
+console.log("Wrote public/video/hero.mp4, hero-mobile.mp4 and hero-poster.webp");

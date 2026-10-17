@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useRef } from "react";
+import { useNearOnce } from "./three/useInView";
 
 const GalleryScene = dynamic(() => import("./three/GalleryScene"), { ssr: false });
 
@@ -10,6 +11,8 @@ export function Gallery() {
   const intro = useRef<HTMLDivElement>(null);
   const outro = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
+  // Don't download the 3D textures until the visitor is about two screens away from the gallery.
+  const near = useNearOnce(track, "200% 0px");
 
   const onProgress = useCallback((p: number) => {
     if (intro.current) intro.current.style.opacity = String(Math.max(0, 1 - p * 7));
@@ -20,7 +23,7 @@ export function Gallery() {
   return (
     <section id="gallery" ref={track} className="relative h-[520vh] bg-ink">
       <div className="sticky top-0 h-[100svh] overflow-hidden">
-        <GalleryScene track={track} onProgress={onProgress} />
+        {near && <GalleryScene track={track} onProgress={onProgress} />}
 
         <div ref={intro} className="pointer-events-none absolute inset-x-0 top-[17%] flex flex-col items-center px-6 text-center">
           <p className="eyebrow">Gallery</p>
