@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import QRCode from "qrcode";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
 import { directThanks, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
 import {
@@ -27,6 +26,7 @@ import {
 } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
 import { captureLead, type Lead, type LeadStage } from "@/lib/leads";
+import { fullName, greetingName, titles } from "@/lib/guest";
 import { Amenities, CancellationPolicy, DealPrice, PriceCard, Stepper, Ticket } from "./parts";
 
 type Step = "rooms" | "review" | "pay" | "done";
@@ -51,7 +51,7 @@ export function BookingFlow() {
     const checkOut = pOut && pOut > checkIn ? pOut : addDays(checkIn, 1);
     const guests = Math.min(20, Math.max(1, Number(params.get("g") ?? d.guests ?? 2) || 2));
     const room = params.get("room") ?? d.room;
-    return { today, checkIn, checkOut, guests, room: isRoom(room) ? room : ("" as const), name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
+    return { today, checkIn, checkOut, guests, room: isRoom(room) ? room : ("" as const), title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
   });
 
   const [step, setStep] = useState<Step>("rooms");
@@ -61,6 +61,7 @@ export function BookingFlow() {
   const [qty, setQty] = useState<RoomQty>(() => allocateRooms(init.guests, init.room));
   const [picked] = useState<RoomQty>(qty);
   const [plan, setPlan] = useState<MealPlanCode>("EP");
+  const [title, setTitle] = useState(init.title);
   const [name, setName] = useState(init.name);
   const [phone, setPhone] = useState(init.phone);
   const [email, setEmail] = useState(init.email);
@@ -91,7 +92,7 @@ export function BookingFlow() {
   useEffect(() => {
     if (!init.phone) return;
     const r = allocateRooms(init.guests, init.room);
-    captureLead({ phone: init.phone, name: init.name, checkIn: init.checkIn, checkOut: init.checkOut, guests: init.guests, rooms: describeRooms(r), stage: "rooms" });
+    captureLead({ phone: init.phone, name: fullName(init.title, init.name), checkIn: init.checkIn, checkOut: init.checkOut, guests: init.guests, rooms: describeRooms(r), stage: "rooms" });
   }, [init]);
 
   const nights = nightsBetween(checkIn, checkOut);
@@ -118,7 +119,7 @@ export function BookingFlow() {
   const lead = (stage: LeadStage, extra: Partial<Lead> = {}) =>
     captureLead({
       phone,
-      name,
+      name: fullName(title, name),
       email,
       checkIn,
       checkOut,
@@ -138,7 +139,7 @@ export function BookingFlow() {
   const toPay = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
-    saveDraft({ checkIn, checkOut, guests, room: "", name, phone, email });
+    saveDraft({ checkIn, checkOut, guests, room: "", title, name, phone, email });
     const id = bookingId || newBookingId();
     setBookingId(id);
     lead("payment", { bookingId: id });
@@ -152,7 +153,7 @@ export function BookingFlow() {
 
   const summary = [
     `Booking ID: ${bookingId}`,
-    `Name: ${name}`,
+    `Name: ${fullName(title, name)}`,
     `Phone: ${phone}`,
     `Email: ${email}`,
     `Check-in: ${formatFull(checkIn)}`,
@@ -307,10 +308,17 @@ export function BookingFlow() {
               <form id="guest-form" className="bk-panel bk-guest" onSubmit={toPay} autoComplete="on">
                 <p className="bk-h3">Guest details</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="field">
-                    <span>Full name</span>
-                    <input name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} />
-                  </label>
+                  <div className="field">
+                    <label htmlFor="guest-name">Full name</label>
+                    <div className="field-row">
+                      <select aria-label="Title (optional)" autoComplete="honorific-prefix" value={title} onChange={(e) => setTitle(e.target.value)}>
+                        {titles.map((t) => (
+                          <option key={t} value={t}>{t || "Title"}</option>
+                        ))}
+                      </select>
+                      <input id="guest-name" name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                  </div>
                   <label className="field">
                     <span>Phone</span>
                     <input name="tel" type="tel" autoComplete="tel" inputMode="tel" required pattern="[0-9+\s\-]{8,16}" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => lead("review")} />
@@ -416,7 +424,7 @@ export function BookingFlow() {
           {step === "done" && (
             <>
               <p className="eyebrow">Booking received</p>
-              <h1 className="bk-h1">Thank you, {name.split(" ")[0] || "guest"}.</h1>
+              <h1 className="bk-h1">{greetingName(title, name) ? `${greetingName(title, name)}, we can't wait to see you!` : "We can't wait to see you!"}</h1>
               <p className="text-ivory/70">We&apos;re checking your payment and will confirm on WhatsApp and email.</p>
               <div className="bk-panel bk-direct">
                 <p className="bk-h3">{directThanks.title}</p>
@@ -426,7 +434,7 @@ export function BookingFlow() {
                   {directThanks.tip}
                 </p>
               </div>
-              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} bookingId={bookingId} />
+              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} bookingId={bookingId} guestName={fullName(title, name)} />
               <div className="bk-panel">
                 <p className="bk-h3">Last step: send your booking to the hotel</p>
                 <p className="text-sm text-ivory/70">This sends your booking ID and UPI reference so the front desk can confirm your rooms.</p>
@@ -478,7 +486,9 @@ function UpiQr({ link }: { link: string }) {
   const [svg, setSvg] = useState("");
   useEffect(() => {
     let live = true;
-    QRCode.toString(link, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#12100d", light: "#f3ede2" } })
+    // loaded only when a computer user asks for the QR, so phones never download it
+    import("qrcode")
+      .then((m) => m.default.toString(link, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#12100d", light: "#f3ede2" } }))
       .then((s) => live && setSvg(s))
       .catch(() => {});
     return () => {

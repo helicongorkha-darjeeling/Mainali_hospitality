@@ -150,6 +150,7 @@ export function Ticket({
   guests,
   mealPlanName,
   bookingId,
+  guestName,
 }: {
   checkIn: string;
   checkOut: string;
@@ -158,6 +159,7 @@ export function Ticket({
   guests: number;
   mealPlanName: string;
   bookingId?: string;
+  guestName?: string;
 }) {
   const roomCount = qty.king + qty.triple + qty.quad + qty.family;
   return (
@@ -167,6 +169,11 @@ export function Ticket({
           <p className="ticket-kicker">Hotel in Chowk Bazaar, Darjeeling</p>
           <p className="ticket-hotel">{hotel.name}</p>
           <p className="ticket-addr">{hotel.address}</p>
+          {guestName && (
+            <p className="ticket-guest">
+              <span>Guest</span> {guestName}
+            </p>
+          )}
         </div>
         <div className="ticket-photo">
           <Image src="/images/teesta-hotel-under-the-blue-sky.webp" alt="Hotel Teesta" fill sizes="120px" className="object-cover" />

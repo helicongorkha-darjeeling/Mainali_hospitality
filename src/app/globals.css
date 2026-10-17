@@ -613,7 +613,7 @@ body {
   border: 1px solid color-mix(in oklab, var(--color-ivory) 15%, transparent);
 }
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
-.field > span {
+.field > span, .field > label {
   font-size: 0.62rem;
   font-weight: 600;
   letter-spacing: 0.24em;
@@ -633,6 +633,21 @@ body {
 }
 .field input:focus, .field select:focus { border-color: var(--color-gold); }
 .field select option { background: var(--color-ink); }
+/* title + name side by side */
+.field-row { display: flex; gap: 0.4rem; }
+.field-row select { flex: none; width: 5.2rem; padding: 0 0.5rem; }
+.field-row input { flex: 1; min-width: 0; }
+/* button waiting state */
+.btn-busy { display: inline-flex; align-items: center; gap: 0.6rem; }
+.btn-busy::before {
+  content: "";
+  width: 0.9rem; height: 0.9rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ------------------------------------------------------------------ reduced motion */
 @media (prefers-reduced-motion: reduce) {

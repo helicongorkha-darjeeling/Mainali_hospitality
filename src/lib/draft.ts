@@ -11,6 +11,7 @@ export type BookingDraft = {
   checkOut: string;
   guests: number;
   room: RoomSlug | "";
+  title?: string; // Mr / Ms / Mrs / Dr, optional
   name: string;
   phone: string;
   email?: string;

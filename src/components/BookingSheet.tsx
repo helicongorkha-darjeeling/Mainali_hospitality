@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useBooking } from "./BookingProvider";
 import { getLenis } from "./SmoothScroll";
@@ -9,6 +9,7 @@ import { bookingToMailto, bookingToWhatsAppUrl } from "@/lib/booking";
 import { addDays, allocateRooms, describeRooms, nightsBetween, todayISO } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
 import { captureLead } from "@/lib/leads";
+import { fullName, titles } from "@/lib/guest";
 
 export function BookingSheet() {
   const { isOpen, everOpened, room, close } = useBooking();
@@ -50,32 +51,39 @@ export function BookingSheet() {
         </div>
 
         {/* Mounted on first open (client only, so "today" is the guest's today). Keyed by room. */}
-        {everOpened && <BookingForm key={room} initialRoom={room as RoomSlug | ""} onDone={close} />}
+        {everOpened && <BookingForm key={room} initialRoom={room as RoomSlug | ""} />}
       </div>
     </div>
   );
 }
 
-function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDone: () => void }) {
+function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
   const router = useRouter();
+  const [opening, startOpening] = useTransition();
   const [init] = useState(() => {
     const d = loadDraft();
     const today = todayISO();
     const checkIn = d.checkIn && d.checkIn >= today ? d.checkIn : today;
     const checkOut = d.checkOut && d.checkOut > checkIn ? d.checkOut : addDays(checkIn, 1);
     const fromRoom = rooms.find((r) => r.slug === initialRoom)?.maxGuests;
-    return { today, checkIn, checkOut, guests: fromRoom ?? d.guests ?? 2, name: d.name ?? "", phone: d.phone ?? "" };
+    return { today, checkIn, checkOut, guests: fromRoom ?? d.guests ?? 2, title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "" };
   });
   const [checkIn, setCheckIn] = useState(init.checkIn);
   const [checkOut, setCheckOut] = useState(init.checkOut);
   const [guests, setGuests] = useState(init.guests);
   const [roomSlug, setRoomSlug] = useState<RoomSlug | "">(initialRoom);
+  const [title, setTitle] = useState(init.title);
   const [name, setName] = useState(init.name);
   const [phone, setPhone] = useState(init.phone);
 
+  // Load the booking page in the background while the guest fills this in, so Book feels instant.
+  useEffect(() => {
+    router.prefetch("/book");
+  }, [router]);
+
   const nights = nightsBetween(checkIn, checkOut);
   const plan = useMemo(() => describeRooms(allocateRooms(guests, roomSlug)), [guests, roomSlug]);
-  const req = { checkIn, checkOut, guests, room: roomSlug, name, phone };
+  const req = { checkIn, checkOut, guests, room: roomSlug, title, name, phone };
 
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
@@ -83,16 +91,14 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
   };
 
   // the phone number is the lead: save it as soon as it's entered, booked or not
-  const lead = () => captureLead({ phone, name, checkIn, checkOut, guests, rooms: plan, stage: "details" });
+  const lead = () => captureLead({ phone, name: fullName(title, name), checkIn, checkOut, guests, rooms: plan, stage: "details" });
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     lead();
-    saveDraft(req);
-    const q = new URLSearchParams({ in: checkIn, out: checkOut, g: String(guests) });
-    if (roomSlug) q.set("room", roomSlug);
-    onDone();
-    router.push(`/book?${q}`);
+    saveDraft(req); // dates, guests, room and contact travel in sessionStorage; /book reads them
+    // the form stays open, showing "Opening…", until the booking page is on screen
+    startOpening(() => router.push("/book"));
   };
 
   return (
@@ -125,10 +131,17 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
       <p className="col-span-2 -mt-1 text-xs text-gold-bright" aria-live="polite">
         Best fit: {plan}
       </p>
-      <label className="field col-span-2 sm:col-span-1">
-        <span>Name</span>
-        <input name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} onBlur={lead} placeholder="Your full name" />
-      </label>
+      <div className="field col-span-2 sm:col-span-1">
+        <label htmlFor="bk-name">Name</label>
+        <div className="field-row">
+          <select aria-label="Title (optional)" autoComplete="honorific-prefix" value={title} onChange={(e) => setTitle(e.target.value)}>
+            {titles.map((t) => (
+              <option key={t} value={t}>{t || "Title"}</option>
+            ))}
+          </select>
+          <input id="bk-name" name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} onBlur={lead} placeholder="Your full name" />
+        </div>
+      </div>
       <label className="field col-span-2 sm:col-span-1">
         <span>Phone</span>
         <input
@@ -146,7 +159,9 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
         />
       </label>
 
-      <button type="submit" className="btn-gold col-span-2 mt-3">Book</button>
+      <button type="submit" className="btn-gold col-span-2 mt-3" disabled={opening} aria-busy={opening}>
+        {opening ? <span className="btn-busy">Opening your booking…</span> : "Book"}
+      </button>
       <p className="col-span-2 text-center text-xs leading-relaxed text-ivory/55">
         Prefer to talk?{" "}
         <a href={bookingToWhatsAppUrl(req)} target="_blank" rel="noopener" className="text-gold-bright hover:underline">WhatsApp</a>
