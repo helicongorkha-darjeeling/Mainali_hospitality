@@ -8,6 +8,7 @@ import { hotel, rooms, type RoomSlug } from "@/content/site";
 import { bookingToMailto, bookingToWhatsAppUrl } from "@/lib/booking";
 import { addDays, allocateRooms, describeRooms, nightsBetween, todayISO } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
+import { captureLead } from "@/lib/leads";
 
 export function BookingSheet() {
   const { isOpen, everOpened, room, close } = useBooking();
@@ -81,8 +82,12 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
     if (checkOut <= v) setCheckOut(addDays(v, 1));
   };
 
+  // the phone number is the lead: save it as soon as it's entered, booked or not
+  const lead = () => captureLead({ phone, name, checkIn, checkOut, guests, rooms: plan, stage: "details" });
+
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    lead();
     saveDraft(req);
     const q = new URLSearchParams({ in: checkIn, out: checkOut, g: String(guests) });
     if (roomSlug) q.set("room", roomSlug);
@@ -122,7 +127,7 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
       </p>
       <label className="field col-span-2 sm:col-span-1">
         <span>Name</span>
-        <input name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
+        <input name="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} onBlur={lead} placeholder="Your full name" />
       </label>
       <label className="field col-span-2 sm:col-span-1">
         <span>Phone</span>
@@ -136,6 +141,7 @@ function BookingForm({ initialRoom, onDone }: { initialRoom: RoomSlug | ""; onDo
           title="Phone number, e.g. +91 98765 43210"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          onBlur={lead}
           placeholder="+91"
         />
       </label>

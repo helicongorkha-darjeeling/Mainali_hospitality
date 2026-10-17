@@ -26,6 +26,7 @@ import {
   type RoomQty,
 } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
+import { captureLead, type Lead, type LeadStage } from "@/lib/leads";
 import { Amenities, CancellationPolicy, DealPrice, PriceCard, Stepper, Ticket } from "./parts";
 
 type Step = "rooms" | "review" | "pay" | "done";
@@ -86,6 +87,13 @@ export function BookingFlow() {
   }, [paying]);
   const startPay = () => setPaying(true);
 
+  // they tapped Book and reached this page
+  useEffect(() => {
+    if (!init.phone) return;
+    const r = allocateRooms(init.guests, init.room);
+    captureLead({ phone: init.phone, name: init.name, checkIn: init.checkIn, checkOut: init.checkOut, guests: init.guests, rooms: describeRooms(r), stage: "rooms" });
+  }, [init]);
+
   const nights = nightsBetween(checkIn, checkOut);
   const q = useMemo(() => quote(qty, guests, nights, plan), [qty, guests, nights, plan]);
   const cap = totalCapacity(qty);
@@ -106,16 +114,39 @@ export function BookingFlow() {
     if (checkOut <= v) setCheckOut(addDays(v, 1));
   };
 
-  const toReview = () => roomsOk && go("review");
+  // lead row in Supabase: the same row moves forward as the guest does
+  const lead = (stage: LeadStage, extra: Partial<Lead> = {}) =>
+    captureLead({
+      phone,
+      name,
+      email,
+      checkIn,
+      checkOut,
+      guests,
+      rooms: describeRooms(qty),
+      mealPlan: plan,
+      total: q.total,
+      stage,
+      ...extra,
+    });
+
+  const toReview = () => {
+    if (!roomsOk) return;
+    lead("review");
+    go("review");
+  };
   const toPay = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
     saveDraft({ checkIn, checkOut, guests, room: "", name, phone, email });
-    if (!bookingId) setBookingId(newBookingId());
+    const id = bookingId || newBookingId();
+    setBookingId(id);
+    lead("payment", { bookingId: id });
     go("pay");
   };
   const confirm = (e: React.FormEvent) => {
     e.preventDefault();
+    lead("booked", { bookingId, upiRef: utr });
     go("done");
   };
 
@@ -282,11 +313,11 @@ export function BookingFlow() {
                   </label>
                   <label className="field">
                     <span>Phone</span>
-                    <input name="tel" type="tel" autoComplete="tel" inputMode="tel" required pattern="[0-9+\s\-]{8,16}" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <input name="tel" type="tel" autoComplete="tel" inputMode="tel" required pattern="[0-9+\s\-]{8,16}" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => lead("review")} />
                   </label>
                   <label className="field sm:col-span-2">
                     <span>Email · for your confirmation</span>
-                    <input name="email" type="email" autoComplete="email" inputMode="email" required placeholder="you@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input name="email" type="email" autoComplete="email" inputMode="email" required placeholder="you@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => lead("review")} />
                   </label>
                   <label className="field sm:col-span-2">
                     <span>Special requests (optional)</span>
