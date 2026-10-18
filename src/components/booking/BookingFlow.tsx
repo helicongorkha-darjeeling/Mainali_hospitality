@@ -355,14 +355,11 @@ export function BookingFlow() {
               <div className="bk-panel bk-pay">
                 {platform === "desktop" ? (
                   <div className="bk-pay-desk">
-                    <p className="bk-h3">Pay from your phone</p>
+                    <p className="bk-h3">Scan to pay {inr(q.total)}</p>
                     <p className="text-sm text-ivory/70">
-                      Open this page on your phone and tap <b>Pay now</b>: Google Pay, PhonePe or Paytm opens with the amount filled in.
+                      Open Google Pay, PhonePe, Paytm or any UPI app on your phone and scan. The amount fills in by itself.
                     </p>
-                    <button type="button" className="bk-qr-toggle" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr}>
-                      {showQr ? "Hide QR code" : "Can't switch devices? Show a QR code"}
-                    </button>
-                    {showQr && <UpiQr link={upiLink(q.total, bookingId)} />}
+                    <UpiQr link={upiLink(q.total, bookingId)} />
                   </div>
                 ) : (
                   <div className="bk-pay-phone">
@@ -388,11 +385,18 @@ export function BookingFlow() {
                         Other UPI app
                       </a>
                     </div>
+                    <button type="button" className="bk-qr-toggle" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr}>
+                      {showQr ? "Hide QR code" : "Show QR code instead"}
+                    </button>
+                    {showQr && <UpiQr link={upiLink(q.total, bookingId)} />}
                   </div>
                 )}
+                <p className="bk-pay-methods">Pay from your bank account or a RuPay credit card linked to UPI.</p>
                 <div className="bk-payee">
                   <p className="ticket-label !text-gold">Paying to</p>
-                  <p className="text-ivory">{upi.payeeName}</p>
+                  <p className="text-ivory">
+                    {upi.payeeName} <span className="text-xs text-ivory/50">· {upi.bank} merchant</span>
+                  </p>
                   <CopyText text={upi.vpa} />
                 </div>
               </div>

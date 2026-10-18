@@ -176,6 +176,9 @@
 .bk-qr svg { width: 100%; height: auto; display: block; }
 .bk-qr-wait { aspect-ratio: 1; border-radius: 0.6rem; background: rgba(18,16,13,.08); }
 .bk-qr p { margin-top: 0.5rem; font-size: 0.72rem; color: rgba(243,237,226,.6); }
+.bk-pay-methods { font-size: 0.78rem; color: rgba(243,237,226,.62); }
+.bk-pay-phone .bk-qr-toggle { display: block; margin: 1rem auto 0; }
+.bk-pay-phone .bk-qr { margin: 0.9rem auto 0; }
 .bk-payee { padding: 0.8rem 1rem; border-radius: 0.8rem; background: rgba(243,237,226,.05); }
 .bk-copy { display: flex; justify-content: space-between; width: 100%; gap: 0.5rem; margin-top: 0.2rem; font-family: ui-monospace, monospace; font-size: 0.85rem; color: var(--color-gold-bright); }
 .bk-copy span { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(243,237,226,.6); }

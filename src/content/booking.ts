@@ -49,11 +49,19 @@ export const cancellationRules = [
 ];
 
 /**
- * UPI payment. Guests scan the QR or open their UPI app; the hotel verifies the UPI reference (UTR).
- * TODO(client): switch to the hotel's merchant UPI ID (or a payment gateway) before launch.
- * Personal UPI IDs have daily limits and some apps block web payment links to them.
+ * UPI merchant account (ICICI Bank eazypay). Values are exactly as encoded in the merchant's QR:
+ *   upi://pay?pa=7430838048.eazypay@icici&pn=HOTEL SAGARMATHA&tr=EZYS7430838048&cu=INR&mc=5172
+ * The site adds only the amount (am) and a note with the booking ID (tn).
+ * `payeeName` must match the registered merchant name; UPI apps show the registered name anyway.
+ * TODO(client): mc 5172 is "petroleum products"; hotels are normally 7011. Ask ICICI to correct it.
  */
-export const upi = { vpa: "upeshb92-4@oksbi", payeeName: "Hotel Teesta" };
+export const upi = {
+  vpa: "7430838048.eazypay@icici",
+  payeeName: "HOTEL SAGARMATHA",
+  merchantRef: "EZYS7430838048", // tr
+  merchantCode: "5172", // mc
+  bank: "ICICI Bank",
+};
 
 /** Room amenities shown in the booking flow. */
 export const amenities: { group: string; items: string[] }[] = [

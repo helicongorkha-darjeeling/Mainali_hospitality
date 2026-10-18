@@ -164,7 +164,15 @@ export function newBookingId() {
 
 /** The UPI payment request (payee, amount, note) shared by every app link. */
 const upiQuery = (amount: number, bookingId: string) =>
-  `pa=${encodeURIComponent(upi.vpa)}&pn=${encodeURIComponent(upi.payeeName)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Booking ${bookingId}`)}`;
+  [
+    `pa=${encodeURIComponent(upi.vpa)}`,
+    `pn=${encodeURIComponent(upi.payeeName)}`,
+    `tr=${encodeURIComponent(upi.merchantRef)}`,
+    `am=${amount.toFixed(2)}`,
+    "cu=INR",
+    `mc=${upi.merchantCode}`,
+    `tn=${encodeURIComponent(`Hotel Teesta booking ${bookingId}`)}`,
+  ].join("&");
 
 /** Standard UPI link. On Android it opens the list of installed UPI apps. */
 export const upiLink = (amount: number, bookingId: string) => `upi://pay?${upiQuery(amount, bookingId)}`;
