@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
 import { directThanks, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
 import {
@@ -68,24 +68,10 @@ export function BookingFlow() {
   const [notes, setNotes] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [bookingId, setBookingId] = useState("");
-  const [utr, setUtr] = useState("");
   const [platform] = useState(detectPlatform);
   const [paying, setPaying] = useState(false);
-  const [returned, setReturned] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  // When the guest comes back from their UPI app, ask them to confirm.
-  useEffect(() => {
-    if (!paying) return;
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        setReturned(true);
-        document.getElementById("pay-confirm")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [paying]);
   const startPay = () => setPaying(true);
 
   // they tapped Book and reached this page
@@ -145,11 +131,25 @@ export function BookingFlow() {
     lead("payment", { bookingId: id });
     go("pay");
   };
-  const confirm = (e: React.FormEvent) => {
-    e.preventDefault();
-    lead("booked", { bookingId, upiRef: utr });
+  const finish = () => {
+    setPaying(false);
+    lead("booked", { bookingId });
     go("done");
   };
+
+  // Coming back from the UPI app = done paying: go straight to the confirmation.
+  // Only counts if the guest was away a few seconds (closing the app picker doesn't).
+  const onReturnFromApp = useEffectEvent(() => finish());
+  useEffect(() => {
+    if (!paying) return;
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 4000) onReturnFromApp();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [paying]);
 
   const summary = [
     `Booking ID: ${bookingId}`,
@@ -161,8 +161,7 @@ export function BookingFlow() {
     `Guests: ${guests}`,
     `Rooms: ${describeRooms(qty)}`,
     `Meal plan: ${mealName} (${plan})`,
-    `Total paid: ${inr(q.total)} via UPI`,
-    `UPI reference (UTR): ${utr || "not entered"}`,
+    `Total paid: ${inr(q.total)} by UPI (payment note: Hotel Teesta booking ${bookingId})`,
     notes && `Requests: ${notes}`,
   ].filter(Boolean) as string[];
 
@@ -360,6 +359,7 @@ export function BookingFlow() {
                       Open Google Pay, PhonePe, Paytm or any UPI app on your phone and scan. The amount fills in by itself.
                     </p>
                     <UpiQr link={upiLink(q.total, bookingId)} />
+                    <button type="button" className="btn-ghost bk-paid" onClick={finish}>I&apos;ve paid</button>
                   </div>
                 ) : (
                   <div className="bk-pay-phone">
@@ -389,6 +389,9 @@ export function BookingFlow() {
                       {showQr ? "Hide QR code" : "Show QR code instead"}
                     </button>
                     {showQr && <UpiQr link={upiLink(q.total, bookingId)} />}
+                    {paying && (
+                      <button type="button" className="bk-qr-toggle" onClick={finish}>Paid already? Continue</button>
+                    )}
                   </div>
                 )}
                 <p className="bk-pay-methods">Pay from your bank account or a RuPay credit card linked to UPI.</p>
@@ -401,26 +404,6 @@ export function BookingFlow() {
                 </div>
               </div>
 
-              <form id="pay-confirm" className="bk-panel" data-returned={returned} onSubmit={confirm}>
-                <p className="bk-h3">{returned ? "Payment done?" : "After paying"}</p>
-                <p className="text-sm text-ivory/70">
-                  {returned
-                    ? "If your app shows the payment as successful, confirm your booking below."
-                    : "Come back here when your app shows the payment as successful."}
-                </p>
-                <label className="field mt-4">
-                  <span>UPI reference (optional, speeds up confirmation)</span>
-                  <input
-                    inputMode="numeric"
-                    pattern="[A-Za-z0-9]{10,22}"
-                    title="The 12-digit UPI reference / UTR from your payment app"
-                    placeholder="12-digit number from your UPI app"
-                    value={utr}
-                    onChange={(e) => setUtr(e.target.value.replace(/\s/g, ""))}
-                  />
-                </label>
-                <button type="submit" className="btn-gold mt-4 w-full">I&apos;ve paid · confirm booking</button>
-              </form>
             </>
           )}
 
@@ -440,8 +423,8 @@ export function BookingFlow() {
               </div>
               <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} bookingId={bookingId} guestName={fullName(title, name)} />
               <div className="bk-panel">
-                <p className="bk-h3">Last step: send your booking to the hotel</p>
-                <p className="text-sm text-ivory/70">This sends your booking ID and UPI reference so the front desk can confirm your rooms.</p>
+                <p className="bk-h3">Your booking is with our front desk</p>
+                <p className="text-sm text-ivory/70">Have a request, or want to hear from us sooner? Message us with your booking.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a
                     className="btn-gold"
@@ -449,18 +432,21 @@ export function BookingFlow() {
                     rel="noopener"
                     href={`https://wa.me/${hotel.whatsapp}?text=${encodeURIComponent(["New booking: Hotel Teesta", ...summary].join("\n"))}`}
                   >
-                    Send on WhatsApp
+                    Message on WhatsApp
                   </a>
                   <a
                     className="btn-ghost"
                     href={`mailto:${hotel.email}?cc=${encodeURIComponent(email)}&subject=${encodeURIComponent(`Booking ${bookingId}: ${formatFull(checkIn)}`)}&body=${encodeURIComponent(summary.join("\n"))}`}
                   >
-                    Send by email
+                    Email us
                   </a>
                   <button type="button" className="btn-ghost" onClick={() => window.print()}>Print</button>
                 </div>
               </div>
-              <Link href="/" className="link-gold mt-2 inline-block">Back to Hotel Teesta</Link>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <Link href="/" className="link-gold">Back to Hotel Teesta</Link>
+                <button type="button" className="bk-qr-toggle" onClick={() => go("pay")}>Payment didn&apos;t go through? Pay again</button>
+              </div>
             </>
           )}
         </section>

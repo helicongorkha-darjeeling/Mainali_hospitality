@@ -176,6 +176,7 @@
 .bk-qr svg { width: 100%; height: auto; display: block; }
 .bk-qr-wait { aspect-ratio: 1; border-radius: 0.6rem; background: rgba(18,16,13,.08); }
 .bk-qr p { margin-top: 0.5rem; font-size: 0.72rem; color: rgba(243,237,226,.6); }
+.bk-paid { align-self: flex-start; margin-top: 0.4rem; }
 .bk-pay-methods { font-size: 0.78rem; color: rgba(243,237,226,.62); }
 .bk-pay-phone .bk-qr-toggle { display: block; margin: 1rem auto 0; }
 .bk-pay-phone .bk-qr { margin: 0.9rem auto 0; }
