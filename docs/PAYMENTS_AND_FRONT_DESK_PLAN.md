@@ -4,6 +4,30 @@ Goal: when a guest pays, the website knows within seconds, a **paid voucher** go
 
 ---
 
+## 0. Launch version: no payment gateway yet (UPI merchant QR)
+
+The bank doesn't notify the website about UPI payments to the merchant QR, so the **front desk confirms each payment once**. Everything else is automatic.
+
+1. The guest pays by UPI and returns, and the booking is saved as **To verify**. This already happens today as a lead at stage `booked`.
+2. Straight away: a **row appears in the Google Sheet** (Status: To verify), the **desk gets an email**, and the **guest gets "Booking received, confirming your payment"**.
+3. The desk checks the ICICI eazypay app or SMS for the amount and the note **"Hotel Teesta booking TST-…"**, then ticks **Verified** in the sheet.
+4. The tick (via an Apps Script in the sheet) tells the website, which emails the guest the **PAID voucher PDF**, plus WhatsApp once the WhatsApp API is set up. The sheet then shows **Voucher sent**.
+
+### Owner checklist (no gateway)
+- [ ] Google: a hotel Gmail account, the sheet "Hotel Teesta Bookings", a Cloud project with the Sheets API and a service account, the sheet shared with it (Editor) and with staff
+- [ ] Resend: account, `mainalihospitality.com` verified (DNS records), API key, a sender (e.g. `bookings@mainalihospitality.com`)
+- [ ] Check that `reservations@mainalihotels.com` is a real inbox someone reads (replies go there)
+- [ ] Front desk: their phone number, staff Google emails, and who checks the ICICI eazypay payments (app login or SMS alerts)
+- [ ] Vercel: upgrade to Pro (commercial use); the owner adds the secrets as environment variables
+- [ ] Optional, longer lead time: WhatsApp Business Platform (Meta verification, a number not already on WhatsApp, templates)
+- [ ] Decisions: merchant name (Sagarmatha vs Teesta), room prices, cancellation schedule
+
+Secrets (`GOOGLE_SERVICE_ACCOUNT_JSON`, `BOOKINGS_SHEET_ID`, `RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DESK_WEBHOOK_SECRET`) go in Vercel → Settings → Environment Variables, and in `website/.env.local` for local testing. That file is git-ignored. Never commit them or paste them into chat.
+
+When a gateway is added later, step 3 becomes automatic: its webhook ticks Verified, and the rest stays the same.
+
+---
+
 ## 1. Front desk options
 
 | Option | Cost | Live? | Desk needs | Verdict |
