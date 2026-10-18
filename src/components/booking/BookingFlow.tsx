@@ -71,6 +71,16 @@ export function BookingFlow() {
   const [platform] = useState(detectPlatform);
   const [paying, setPaying] = useState(false);
   const [showQr, setShowQr] = useState(false);
+  const [noApp, setNoApp] = useState(false);
+
+  // On a computer: if tapping Pay now didn't hand off to a UPI app, point to the QR instead.
+  const tryOpenApp = () => {
+    setPaying(true);
+    setNoApp(false);
+    setTimeout(() => {
+      if (document.visibilityState === "visible" && document.hasFocus()) setNoApp(true);
+    }, 1500);
+  };
 
   const startPay = () => setPaying(true);
 
@@ -354,10 +364,17 @@ export function BookingFlow() {
               <div className="bk-panel bk-pay">
                 {platform === "desktop" ? (
                   <div className="bk-pay-desk">
-                    <p className="bk-h3">Scan to pay {inr(q.total)}</p>
-                    <p className="text-sm text-ivory/70">
-                      Open Google Pay, PhonePe, Paytm or any UPI app on your phone and scan. The amount fills in by itself.
-                    </p>
+                    <a href={upiLink(q.total, bookingId)} onClick={tryOpenApp} className="btn-gold bk-paynow">
+                      Pay {inr(q.total)} now
+                    </a>
+                    {noApp ? (
+                      <p className="bk-pay-note" role="status">
+                        No UPI app opened on this computer. Scan the QR below with your phone: Google Pay, PhonePe or Paytm fills in the amount.
+                      </p>
+                    ) : (
+                      <p className="bk-pay-hint">Opens your UPI app. On a computer, scan the QR with your phone.</p>
+                    )}
+                    <p className="bk-pay-or"><span>or scan with your phone</span></p>
                     <UpiQr link={upiLink(q.total, bookingId)} />
                     <button type="button" className="btn-ghost bk-paid" onClick={finish}>I&apos;ve paid</button>
                   </div>
