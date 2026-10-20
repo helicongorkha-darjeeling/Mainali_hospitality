@@ -16,7 +16,7 @@ The bank doesn't notify the website about UPI payments to the merchant QR, so th
 ### Owner checklist (no gateway)
 - [ ] Google: a hotel Gmail account, the sheet "Hotel Teesta Bookings", a Cloud project with the Sheets API and a service account, the sheet shared with it (Editor) and with staff
 - [ ] Resend: account, `mainalihospitality.com` verified (DNS records), API key, a sender (e.g. `bookings@mainalihospitality.com`)
-- [ ] Check that `reservations@mainalihotels.com` is a real inbox someone reads (replies go there)
+- [ ] Check that `reservations@mainalihospitality.com` is a real inbox someone reads (replies go there)
 - [ ] Front desk: their phone number, staff Google emails, and who checks the ICICI eazypay payments (app login or SMS alerts)
 - [ ] Vercel: upgrade to Pro (commercial use); the owner adds the secrets as environment variables
 - [ ] Optional, longer lead time: WhatsApp Business Platform (Meta verification, a number not already on WhatsApp, templates)

@@ -125,5 +125,5 @@ Then on vercel.com: **Add New → Project → import `Mainali_hospitality`**. Th
 - [ ] Payment gateway for Visa/Mastercard cards, wallets and netbanking (Razorpay / Cashfree / PayU), with automatic payment confirmation
 - [ ] Check-in 12 PM / check-out 11 AM (from the OTA listing)
 - [ ] What "CP" means on room CP318
-- [x] Reservations email: reservations@mainalihotels.com
+- [x] Reservations email: reservations@mainalihospitality.com
 - [ ] Domain name.

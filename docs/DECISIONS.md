@@ -40,4 +40,4 @@ Commits are authored by the owner only, with no co-author lines.
 
 ## Working rule
 
-Every change, including brainstorming outcomes like these entries, is committed and pushed to `main` straight away.
+Push to `main` only when code or the live site changes. Decision notes like these go up with the next code push.

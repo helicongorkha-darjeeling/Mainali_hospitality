@@ -11,7 +11,7 @@ export const hotel = {
   // TODO(client): confirm both numbers (read from the hotel signage).
   phones: ["+91 98327 19783", "+91 62945 63420"],
   whatsapp: "919832719783",
-  email: "reservations@mainalihotels.com", // reservations: guests, travel agents, groups
+  email: "reservations@mainalihospitality.com", // reservations: guests, travel agents, groups
   mapQuery: "Teesta Hotel Bus Stand Darjeeling",
   heroVideo: "/video/hero.mp4", // 720p, desktop
   heroVideoMobile: "/video/hero-mobile.mp4", // 540p, phones and data-saver
