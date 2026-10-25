@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ready-to-paste Apps Script with the real shared secret
+*.local.gs

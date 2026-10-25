@@ -4,6 +4,14 @@ Newest first. Each entry: what was decided, why, and what's still open.
 
 ---
 
+## 2026-10-25: live leads sync to Google Sheets
+
+**Decision:** Supabase pushes every new or updated lead to the front desk sheet itself, using a database trigger (`pg_net`) that calls a Google Apps Script web app inside the sheet (`google/leads-sheet.gs`). This replaces the service-account idea for leads: there's no Google Cloud project, no website code and no Vercel secrets.
+
+**Security:** a shared secret in Supabase Vault (`sheets_webhook_secret`) is checked by the script. The ready-to-paste script is `google/leads-sheet.local.gs` and is git-ignored. The front desk never gets Supabase access.
+
+**Sheet:** tab "Leads", one row per visitor, updated as they move from left number → choosing rooms → reviewing → at payment → says paid. The desk-only columns "Called?" and "Desk notes" are never overwritten.
+
 ## 2026-10-18: payee name must be "Hotel Teesta"
 
 **Decision:** guests must see **Hotel Teesta** as the payee everywhere, including inside Google Pay and PhonePe. "Hotel Sagarmatha" must not appear.
