@@ -56,6 +56,10 @@
 .bk-room-photo { position: relative; aspect-ratio: 4 / 3; border-radius: 0.8rem; overflow: hidden; }
 @media (min-width: 768px) { .bk-room-photo { aspect-ratio: 1; } }
 .bk-pick { position: absolute; left: 0.5rem; top: 0.5rem; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: var(--color-gold); color: var(--color-ink); }
+.bk-left { position: absolute; left: 0.5rem; bottom: 0.5rem; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: rgba(18,16,13,.85); color: #f0a58a; }
+.bk-room[data-soldout="true"] { opacity: 0.5; }
+.bk-notice { margin-top: 0.9rem; padding: 0.7rem 0.9rem; border-radius: 0.7rem; border: 1px solid rgba(240,165,138,.4); background: rgba(240,165,138,.08); color: #f3c3b0; font-size: 0.875rem; }
+.bk-held { margin-top: 0.35rem; font-size: 0.8rem; color: var(--color-gold-bright); }
 .bk-room-buy { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
 @media (min-width: 768px) { .bk-room-buy { flex-direction: column; align-items: flex-end; min-width: 170px; } }
 

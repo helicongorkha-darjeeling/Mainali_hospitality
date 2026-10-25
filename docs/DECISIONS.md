@@ -4,6 +4,18 @@ Newest first. Each entry: what was decided, why, and what's still open.
 
 ---
 
+## 2026-10-25: the booking chart is the master for rooms (Option A)
+
+**Decision:** the front desk's booking chart, converted to Google Sheets, is the one source of truth for which rooms are free. The website reads availability from it and writes its own bookings into it through an Apps Script web app inside the chart (`google/room-chart.gs`). See `AVAILABILITY_SYNC_PLAN.md`.
+
+**How:** at payment, the rooms are held in amber for 30 minutes (same room every night). When the guest says they've paid, the cells turn green "VERIFY PAY". Unpaid holds free themselves. The website only touches cells starting "WEB". Anything unclear in the chart (coloured empty cells, a night missing from a month) counts as booked, so the website never oversells.
+
+**Security:** a shared secret in Vercel (`CHART_API_SECRET`) and in the script. The ready-to-paste script is `google/room-chart.local.gs` (git-ignored). The secret is never put in a URL.
+
+**Until connected:** without `CHART_API_URL` and `CHART_API_SECRET` the site books as before.
+
+**Open:** convert the chart and fix two typos, deploy the script, set the Vercel env vars, confirm room types 307 and 315.
+
 ## 2026-10-25: live leads sync to Google Sheets
 
 **Decision:** Supabase pushes every new or updated lead to the front desk sheet itself, using a database trigger (`pg_net`) that calls a Google Apps Script web app inside the sheet (`google/leads-sheet.gs`). This replaces the service-account idea for leads: there's no Google Cloud project, no website code and no Vercel secrets.

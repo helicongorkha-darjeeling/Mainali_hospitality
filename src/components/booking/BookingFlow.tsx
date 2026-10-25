@@ -27,6 +27,7 @@ import {
 import { loadDraft, saveDraft } from "@/lib/draft";
 import { captureLead, type Lead, type LeadStage } from "@/lib/leads";
 import { fullName, greetingName, titles } from "@/lib/guest";
+import type { ChartReply } from "@/lib/chart";
 import { Amenities, CancellationPolicy, DealPrice, PriceCard, Stepper, Ticket } from "./parts";
 
 type Step = "rooms" | "review" | "pay" | "done";
@@ -37,6 +38,17 @@ const STEPS: { id: Step; label: string }[] = [
 ];
 
 const isRoom = (v: string | null | undefined): v is RoomSlug => !!v && rooms.some((r) => r.slug === v);
+
+/** Free rooms from the booking chart, never more than the hotel has. */
+const capped = (free: Partial<RoomQty>): RoomQty =>
+  Object.fromEntries(rooms.map((r) => [r.slug, Math.max(0, Math.min(inventory[r.slug], free[r.slug] ?? 0))])) as RoomQty;
+/** "301, 302" from the chart's { king: [301, 302] } */
+const roomNumbers = (a?: Partial<Record<RoomSlug, number[]>>) =>
+  rooms
+    .flatMap((r) => a?.[r.slug] ?? [])
+    .sort((x, y) => x - y)
+    .join(", ");
+const roomName = (slug?: RoomSlug) => rooms.find((r) => r.slug === slug)?.name ?? "That room";
 
 export function BookingFlow() {
   const params = useSearchParams();
@@ -59,7 +71,6 @@ export function BookingFlow() {
   const [checkOut, setCheckOut] = useState(init.checkOut);
   const [guests, setGuests] = useState(init.guests);
   const [qty, setQty] = useState<RoomQty>(() => allocateRooms(init.guests, init.room));
-  const [picked] = useState<RoomQty>(qty);
   const [plan, setPlan] = useState<MealPlanCode>("EP");
   const [title, setTitle] = useState(init.title);
   const [name, setName] = useState(init.name);
@@ -72,6 +83,31 @@ export function BookingFlow() {
   const [paying, setPaying] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [noApp, setNoApp] = useState(false);
+
+  // Live rooms from the hotel's booking chart. Not known yet (or chart not connected) = the full inventory.
+  const [avail, setAvail] = useState<{ key: string; free: RoomQty } | null>(null);
+  const [held, setHeld] = useState(""); // room numbers held in the chart for this booking, e.g. "301, 302"
+  const [holding, setHolding] = useState(false);
+  const [notice, setNotice] = useState(""); // "just sold out" message on the rooms step
+  const [unplaced, setUnplaced] = useState(false); // paid, but the chart had no room left: the desk calls them
+  const stayKey = `${checkIn}_${checkOut}`;
+  const limits = avail?.key === stayKey ? avail.free : inventory;
+  const best = useMemo(() => allocateRooms(guests, "", limits), [guests, limits]);
+
+  const onAvailability = useEffectEvent((key: string, r: ChartReply) => {
+    if (!r.ok || !r.free) return;
+    const free = capped(r.free);
+    setAvail({ key, free });
+    if (key === stayKey) setQty((q) => (rooms.every((x) => q[x.slug] <= free[x.slug]) ? q : allocateRooms(guests, "", free)));
+  });
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`/api/availability?from=${checkIn}&to=${checkOut}`, { signal: ctrl.signal, cache: "no-store" }) // the CDN caches it, not the browser
+      .then((r) => r.json())
+      .then((r: ChartReply) => onAvailability(`${checkIn}_${checkOut}`, r))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [checkIn, checkOut]);
 
   // On a computer: if tapping Pay now didn't hand off to a UPI app, point to the QR instead.
   const tryOpenApp = () => {
@@ -95,6 +131,7 @@ export function BookingFlow() {
   const q = useMemo(() => quote(qty, guests, nights, plan), [qty, guests, nights, plan]);
   const cap = totalCapacity(qty);
   const roomsOk = totalRooms(qty) > 0 && cap >= guests;
+  const bedsLeft = totalCapacity(limits);
   const mealName = mealPlans.find((m) => m.code === plan)!.name;
 
   const go = (s: Step) => {
@@ -104,12 +141,15 @@ export function BookingFlow() {
 
   const changeGuests = (g: number) => {
     setGuests(g);
-    setQty(allocateRooms(g));
+    setQty(allocateRooms(g, "", limits));
   };
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
     if (checkOut <= v) setCheckOut(addDays(v, 1));
   };
+
+  // what the desk sees in the leads sheet: "2 × The King · rooms 301, 302"
+  const roomsText = (h = held) => describeRooms(qty) + (h ? ` · room${h.includes(",") ? "s" : ""} ${h}` : "");
 
   // lead row in Supabase: the same row moves forward as the guest does
   const lead = (stage: LeadStage, extra: Partial<Lead> = {}) =>
@@ -120,31 +160,69 @@ export function BookingFlow() {
       checkIn,
       checkOut,
       guests,
-      rooms: describeRooms(qty),
+      rooms: roomsText(),
       mealPlan: plan,
       total: q.total,
       stage,
       ...extra,
     });
 
+  // the booking chart: hold the rooms while the guest pays, confirm when they say they've paid
+  const chart = (action: "hold" | "confirm", id: string): Promise<ChartReply> =>
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, bookingId: id, checkIn, checkOut, rooms: qty, name: fullName(title, name), guests, plan, phone }),
+      keepalive: action === "confirm", // still sent if the guest closes the page
+    })
+      .then((r) => r.json())
+      .catch(() => ({ ok: false, reason: "offline" }));
+
   const toReview = () => {
     if (!roomsOk) return;
+    setNotice("");
     lead("review");
     go("review");
   };
-  const toPay = (e: React.FormEvent) => {
+  const toPay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreed) return;
+    if (!agreed || holding) return;
     saveDraft({ checkIn, checkOut, guests, room: "", title, name, phone, email });
     const id = bookingId || newBookingId();
     setBookingId(id);
-    lead("payment", { bookingId: id });
+    setHolding(true);
+    const r = await chart("hold", id);
+    setHolding(false);
+    if (!r.ok && r.reason === "sold_out") {
+      const free = r.free ? capped(r.free) : { ...limits, ...(r.type ? { [r.type]: r.left ?? 0 } : {}) };
+      setAvail({ key: stayKey, free });
+      setQty(allocateRooms(guests, "", free));
+      setNotice(`Sorry, ${roomName(r.type)} just sold out for these dates. We've picked the best rooms left.`);
+      go("rooms");
+      return;
+    }
+    // chart not reachable: carry on, the desk still gets the booking in the leads sheet
+    const h = r.ok ? roomNumbers(r.assigned) : "";
+    setHeld(h);
+    lead("payment", { bookingId: id, rooms: roomsText(h) });
     go("pay");
   };
   const finish = () => {
     setPaying(false);
     lead("booked", { bookingId });
     go("done");
+    chart("confirm", bookingId).then((r) => {
+      if (r.ok) {
+        const h = roomNumbers(r.assigned);
+        if (h && h !== held) {
+          setHeld(h);
+          lead("booked", { bookingId, rooms: roomsText(h) });
+        }
+      } else if (r.reason === "sold_out") {
+        setUnplaced(true);
+        lead("booked", { bookingId, rooms: `${describeRooms(qty)} · NO ROOM IN CHART, call guest` });
+      }
+    });
   };
 
   // Coming back from the UPI app = done paying: go straight to the confirmation.
@@ -181,8 +259,8 @@ export function BookingFlow() {
         {totalRooms(qty) > 1 ? "Book these rooms" : "Book this room"}
       </button>
     ) : step === "review" ? (
-      <button type="submit" form="guest-form" className="btn-gold w-full" disabled={!agreed}>
-        Continue to payment
+      <button type="submit" form="guest-form" className="btn-gold w-full" disabled={!agreed} aria-busy={holding}>
+        {holding ? <span className="btn-busy">Holding your rooms…</span> : "Continue to payment"}
       </button>
     ) : null;
 
@@ -233,18 +311,26 @@ export function BookingFlow() {
                 </label>
               </div>
 
+              {notice && <p className="bk-notice" role="alert">{notice}</p>}
               <p className={`bk-fit ${roomsOk ? "" : "bk-fit-warn"}`} aria-live="polite">
                 {roomsOk
                   ? `${describeRooms(qty)} · sleeps ${cap}, picked for ${guests} guest${guests > 1 ? "s" : ""}`
-                  : `Add rooms: ${guests} guests need ${guests - cap} more bed${guests - cap > 1 ? "s" : ""}.`}
+                  : bedsLeft < guests
+                    ? bedsLeft
+                      ? `Only ${bedsLeft} beds left for these dates. Call the front desk for a bigger group.`
+                      : "Sold out for these dates. Try other dates, or call the front desk."
+                    : `Add rooms: ${guests} guests need ${guests - cap} more bed${guests - cap > 1 ? "s" : ""}.`}
               </p>
 
               <div className="bk-rooms">
                 {rooms.map((r) => (
-                  <article key={r.slug} className="bk-room" data-on={qty[r.slug] > 0}>
+                  <article key={r.slug} className="bk-room" data-on={qty[r.slug] > 0} data-soldout={limits[r.slug] === 0}>
                     <div className="bk-room-photo">
                       <Image src={r.image} alt={r.name} fill sizes="(min-width: 768px) 220px, 100vw" className="object-cover" />
-                      {picked[r.slug] > 0 && <span className="bk-pick">Best fit</span>}
+                      {best[r.slug] > 0 && <span className="bk-pick">Best fit</span>}
+                      {limits !== inventory && limits[r.slug] <= 3 && (
+                        <span className="bk-left">{limits[r.slug] ? `Only ${limits[r.slug]} left` : "Sold out"}</span>
+                      )}
                     </div>
                     <div className="bk-room-info">
                       <h2 className="font-display text-3xl leading-none">{r.name}</h2>
@@ -261,7 +347,7 @@ export function BookingFlow() {
                       <Stepper
                         label={r.name}
                         value={qty[r.slug]}
-                        max={inventory[r.slug]}
+                        max={limits[r.slug]}
                         onChange={(n) => setQty((x) => ({ ...x, [r.slug]: n }))}
                       />
                     </div>
@@ -360,6 +446,7 @@ export function BookingFlow() {
               <button type="button" className="bk-back" onClick={() => go("review")}>← Back to review</button>
               <h1 className="bk-h1">Pay {inr(q.total)}</h1>
               <p className="text-sm text-ivory/65">Booking ID <b className="text-ivory">{bookingId}</b> · Google Pay, PhonePe, Paytm or any UPI app</p>
+              {held && <p className="bk-held">{totalRooms(qty) > 1 ? "Your rooms are" : "Your room is"} held for you for 30 minutes.</p>}
 
               <div className="bk-panel bk-pay">
                 {platform === "desktop" ? (
@@ -429,7 +516,11 @@ export function BookingFlow() {
             <>
               <p className="eyebrow">Booking received</p>
               <h1 className="bk-h1">{greetingName(title, name) ? `${greetingName(title, name)}, we can't wait to see you!` : "We can't wait to see you!"}</h1>
-              <p className="text-ivory/70">We&apos;re checking your payment and will confirm on WhatsApp and email.</p>
+              <p className="text-ivory/70">
+                {unplaced
+                  ? "Our front desk will call you shortly to confirm your room and payment."
+                  : "We're checking your payment and will confirm on WhatsApp and email."}
+              </p>
               <div className="bk-panel bk-direct">
                 <p className="bk-h3">{directThanks.title}</p>
                 <p className="text-sm text-ivory/80">{directThanks.body.replace("{saved}", inr(q.savings))}</p>

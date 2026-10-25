@@ -50,22 +50,23 @@ export const totalRooms = (q: RoomQty) => q.king + q.triple + q.quad + q.family;
 /**
  * Picks rooms for a group: fewest rooms first, then the lowest price, then the fewest empty beds.
  * With a preferred type, it fills that type first (e.g. 3 guests who want The King get 2 Kings).
+ * `limits` caps each type (the rooms still free for the dates). If nothing fits, it returns every free room.
  */
-export function allocateRooms(guests: number, prefer?: RoomSlug | ""): RoomQty {
+export function allocateRooms(guests: number, prefer?: RoomSlug | "", limits: RoomQty = inventory): RoomQty {
   const g = Math.max(1, guests);
-  if (prefer) {
-    const n = Math.min(inventory[prefer], Math.ceil(g / capacity(prefer)));
+  if (prefer && limits[prefer] > 0) {
+    const n = Math.min(limits[prefer], Math.ceil(g / capacity(prefer)));
     const q = { ...emptyQty(), [prefer]: n };
     const left = g - totalCapacity(q);
     if (left <= 0) return q;
-    const rest = allocateRooms(left);
+    const rest = allocateRooms(left, "", { ...limits, [prefer]: limits[prefer] - n });
     return { king: q.king + rest.king, triple: q.triple + rest.triple, quad: q.quad + rest.quad, family: q.family + rest.family };
   }
   let best: { q: RoomQty; key: [number, number, number] } | null = null;
-  for (let f = 0; f <= inventory.family; f++)
-    for (let qd = 0; qd <= inventory.quad; qd++)
-      for (let t = 0; t <= inventory.triple; t++)
-        for (let k = 0; k <= inventory.king; k++) {
+  for (let f = 0; f <= limits.family; f++)
+    for (let qd = 0; qd <= limits.quad; qd++)
+      for (let t = 0; t <= limits.triple; t++)
+        for (let k = 0; k <= limits.king; k++) {
           const q = { king: k, triple: t, quad: qd, family: f };
           const cap = totalCapacity(q);
           if (cap < g) continue;
@@ -73,7 +74,7 @@ export function allocateRooms(guests: number, prefer?: RoomSlug | ""): RoomQty {
           if (!best || key[0] < best.key[0] || (key[0] === best.key[0] && (key[1] < best.key[1] || (key[1] === best.key[1] && key[2] < best.key[2]))))
             best = { q, key };
         }
-  return best?.q ?? { ...emptyQty(), king: Math.ceil(g / 2) };
+  return best?.q ?? { ...limits };
 }
 
 const roomNightPrice = (q: RoomQty) => (Object.keys(q) as RoomSlug[]).reduce((s, k) => s + q[k] * roomRates[k].direct, 0);
