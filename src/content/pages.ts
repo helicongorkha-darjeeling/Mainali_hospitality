@@ -49,7 +49,8 @@ export type Copy = string | null;
 /* ------------------------------------------------------------------ /rooms */
 
 /** One short paragraph answering "what are the rooms like?" before the table. */
-export const roomsIntro: Copy = null;
+export const roomsIntro: Copy =
+  "Hotel Teesta is a budget hotel, but the rooms carry more than the price suggests: an attached bathroom with hot water, WiFi, warm bedding and room service come as standard. The four types differ mainly in how many beds they have and how many guests they sleep.";
 
 /** A line of your own for each room type, under its specs. */
 export const roomNotes: Record<string, Copy> = Object.fromEntries(rooms.map((r) => [r.slug, null]));
@@ -136,7 +137,16 @@ export const lastMile: Copy = null;
 /* ------------------------------------------------------------------ /about */
 
 export const about: { heading: string; body: Copy }[] = [
-  { heading: `Who runs ${hotel.name}?`, body: null },
-  { heading: "What kind of stay is it?", body: null },
-  { heading: "What does the front desk do for guests?", body: null },
+  {
+    heading: `Who runs ${hotel.name}?`,
+    body: `${hotel.name} is run by ${hotel.brand}, which also runs its own fleet of cars: sightseeing trips, pickups and drops from the airport and the station, and taxis around town. The room and the travel are arranged by the same people, so a car can be sorted at the desk.`,
+  },
+  {
+    heading: "What kind of stay is it?",
+    body: `A budget hotel with more in the rooms than the price suggests — an attached bathroom with hot water, WiFi, warm bedding and room service, across 25 rooms. It sits in the centre of ${hotel.city}, so the Mall and the town's best-known spots are an easy walk away if you like walking.`,
+  },
+  {
+    heading: "What does the front desk do for guests?",
+    body: "Everything you would expect from a Darjeeling front desk: assigning rooms, taking and managing bookings, and pointing you to the places worth seeing. Because the cars are run by the same company, the desk can arrange the trip itself — a day out, a pickup, or a taxi across town.",
+  },
 ];

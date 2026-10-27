@@ -9,7 +9,7 @@
  * Google's review-snippet policy forbids aggregating reviews from other sites, and reviews about
  * yourself are ineligible for star snippets. Reviews can be shown as page text, never as markup.
  */
-import { dining, hotel, rooms, type Room } from "@/content/site";
+import { dining, hotel, roomInventory, rooms, type Room } from "@/content/site";
 import { amenities, mealPlans, roomRates, stayTimes } from "@/content/booking";
 import { abs } from "@/lib/seo";
 
@@ -146,7 +146,8 @@ function lodging() {
     paymentAccepted: "UPI",
     checkinTime: asTime(stayTimes.checkIn),
     checkoutTime: asTime(stayTimes.checkOut),
-    numberOfRooms: 25, // TODO(client): confirm — one listing says 24
+    // Counted from the room chart (25), confirmed by the owner. An aggregator listing says 24.
+    numberOfRooms: roomInventory.length,
     // TODO(client): `petsAllowed` is a useful field, but left out until the hotel confirms its policy.
     // Structured data has to match reality, so an unverified guess is worse than silence.
     amenityFeature,
