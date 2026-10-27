@@ -175,15 +175,24 @@ export function homeSchema() {
   return { "@context": "https://schema.org", "@graph": [organization(), website(), lodging(), restaurant()] };
 }
 
-/** A policy page: breadcrumbs back to the homepage, plus the page itself. */
-export function policySchema(slug: string, title: string, description: string) {
+/**
+ * Any sub-page: the page itself, breadcrumbs back to the homepage, and whatever extra nodes
+ * that page has (an FAQPage, a list of rooms). `about` ties every page to the hotel entity,
+ * which is how a search engine knows these pages are all about the same business.
+ */
+export function pageSchema(
+  path: string,
+  title: string,
+  description: string,
+  { type = "WebPage", extra = [] as object[] } = {}
+) {
   return {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "WebPage",
-        "@id": abs(`/policies/${slug}`),
-        url: abs(`/policies/${slug}`),
+        "@type": type,
+        "@id": abs(path),
+        url: abs(path),
         name: title,
         description,
         isPartOf: { "@id": id.website },
@@ -197,6 +206,45 @@ export function policySchema(slug: string, title: string, description: string) {
           { "@type": "ListItem", position: 2, name: title },
         ],
       },
+      ...extra,
     ],
   };
 }
+
+/** A policy page. */
+export const policySchema = (slug: string, title: string, description: string) =>
+  pageSchema(`/policies/${slug}`, title, description);
+
+/**
+ * Questions and answers. Google retired FAQ rich results in May 2026, so this earns no stars —
+ * it stays because it is still the clearest way to hand a question-and-answer pair to a machine.
+ * Only answered questions go in; an empty answer would be worse than none.
+ */
+export function faqSchema(items: { q: string; a: string | null }[]) {
+  const answered = items.filter((i) => i.a);
+  if (!answered.length) return null;
+  return {
+    "@type": "FAQPage",
+    mainEntity: answered.map((i) => ({
+      "@type": "Question",
+      name: i.q,
+      acceptedAnswer: { "@type": "Answer", text: i.a },
+    })),
+  };
+}
+
+/** The room types as an ordered list, for the /rooms page. */
+export function roomListSchema() {
+  return {
+    "@type": "ItemList",
+    name: `Room types at ${hotel.name}`,
+    itemListElement: rooms.map((r, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: hotelRoom(r),
+    })),
+  };
+}
+
+/** One room type, for its own page. */
+export const roomSchema = (r: Room) => hotelRoom(r);

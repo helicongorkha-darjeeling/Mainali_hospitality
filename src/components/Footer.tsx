@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { hotel, nav } from "@/content/site";
 import { policyLinks } from "@/content/policies";
+import { contentPages, pageOrder } from "@/content/pages";
 
 export function Footer() {
   return (
@@ -11,12 +12,23 @@ export function Footer() {
           <p className="mt-1 text-xs uppercase tracking-[0.3em] text-ivory/50">by {hotel.brand}</p>
           <p className="mt-4 text-sm text-ivory/60">{hotel.address}</p>
         </div>
+        {/*
+          The homepage navigation is all #anchors, so these footer links are the only internal
+          path to the standalone pages. Drafts are left out until their copy is written.
+        */}
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-ivory/70" aria-label="Footer">
           {nav.map((l) => (
             <a key={l.href} href={l.href} className="hover:text-gold-bright">
               {l.label}
             </a>
           ))}
+          {pageOrder
+            .filter((slug) => !contentPages[slug].draft)
+            .map((slug) => (
+              <Link key={slug} href={`/${slug}`} className="hover:text-gold-bright">
+                {contentPages[slug].nav}
+              </Link>
+            ))}
         </nav>
         <div className="flex flex-col gap-1 text-sm md:items-end">
           <a href={`tel:${hotel.phones[0].replace(/\s/g, "")}`} className="text-ivory/80 hover:text-gold-bright">
