@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useRef } from "react";
+import { gallery, hotel } from "@/content/site";
 import { useNearOnce } from "./three/useInView";
 
 const GalleryScene = dynamic(() => import("./three/GalleryScene"), { ssr: false });
@@ -40,6 +41,32 @@ export function Gallery() {
           <div ref={bar} className="h-full origin-left scale-x-0 bg-gold" />
         </div>
       </div>
+
+      {/*
+        The gallery above is a WebGL scene: the photos are textures on canvas planes, so they are
+        never <img> tags and no crawler or image search can reach them, however well it runs JS.
+        These are the same eleven photos as real images, for crawlers and for anyone without
+        JavaScript. <noscript> keeps them out of the way of the 3D scene for everyone else.
+      */}
+      <noscript>
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 px-6 pb-16 sm:grid-cols-3">
+          {gallery.map((g) => (
+            // Plain <img> on purpose: next/image would point these at /_next/image?url=…, and a
+            // direct .webp URL is what image search should find. The textures are already small.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={g.src}
+              src={g.src}
+              alt={`${g.alt} — ${hotel.name}, ${hotel.city}`}
+              width={400}
+              height={Math.round(400 / g.ratio)}
+              loading="lazy"
+              decoding="async"
+              className="h-auto w-full rounded-lg"
+            />
+          ))}
+        </div>
+      </noscript>
     </section>
   );
 }
