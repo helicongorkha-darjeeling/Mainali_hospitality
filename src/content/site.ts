@@ -8,6 +8,26 @@ export const hotel = {
   brand: "Mainali Hospitality",
   city: "Darjeeling",
   address: "Bus Stand, Darjeeling, West Bengal 734101",
+  /** The same address in parts, for the Hotel schema. Keep it in step with `address` above. */
+  postal: {
+    street: "Bus Stand",
+    locality: "Darjeeling",
+    region: "West Bengal",
+    postalCode: "734101",
+    country: "IN",
+  },
+  /**
+   * TODO(client): exact coordinates, from Google Maps (right-click the hotel → click the lat/lng to copy).
+   * Left null until confirmed: a guessed pin is worse than none, and this is what ties the site to
+   * the Maps listing. The Hotel schema leaves `geo` out while this is null.
+   */
+  geo: null as { lat: number; lng: number } | null,
+  /**
+   * TODO(client): the hotel's other profiles — Google Business Profile, MakeMyTrip, Booking.com,
+   * TripAdvisor. These tell search engines that the 4.1★/672-review listing and this site are the
+   * same business, which is how the reviews come to count for the site.
+   */
+  sameAs: [] as string[],
   // TODO(client): confirm both numbers (read from the hotel signage).
   phones: ["+91 98327 19783", "+91 62945 63420"],
   whatsapp: "919832719783",
@@ -62,6 +82,8 @@ export type Room = {
   maxGuests: number;
   features: string[];
   image: string; // card photo
+  /** Describes what the card photo shows, for image search and screen readers. */
+  imageAlt: string;
   images: string[]; // extra photos for the booking flow
 };
 
@@ -76,6 +98,7 @@ export const rooms: Room[] = [
     maxGuests: 2,
     features: ["Double bed", "1–2 guests", "TV in select rooms"],
     image: "/images/teesta-double-room.webp",
+    imageAlt: "Double bed with red cushions, a wall-mounted TV and a curtained window in The King room at Hotel Teesta, Darjeeling",
     images: ["/images/teesta-double-room-window.webp", "/images/teesta-double-room-bedside.webp", "/images/teesta-double-room-interior.webp"],
   },
   {
@@ -87,6 +110,7 @@ export const rooms: Room[] = [
     maxGuests: 3,
     features: ["3 beds", "Up to 3 guests", "TV in select rooms"],
     image: "/images/teesta-triple-room.webp",
+    imageAlt: "Separate beds with red cushions against a wood-panelled wall, with a kettle on the bedside table, in The Triple room at Hotel Teesta, Darjeeling",
     images: ["/images/teesta-multi-bed-room.webp"],
   },
   {
@@ -98,6 +122,7 @@ export const rooms: Room[] = [
     maxGuests: 4,
     features: ["4 beds", "Up to 4 guests", "TV"],
     image: "/images/teesta-family-room.webp",
+    imageAlt: "Beds side by side with red cushions, a kettle and a curtained window in The Quad room at Hotel Teesta, Darjeeling",
     images: ["/images/teesta-four-person-room.webp"],
   },
   {
@@ -109,6 +134,7 @@ export const rooms: Room[] = [
     maxGuests: 6,
     features: ["Suite", "6 beds", "Up to 6 guests", "Families & groups"],
     image: "/images/teesta-family-sofa-room.webp",
+    imageAlt: "Sofa seating, a low wooden table, a TV and beds at both ends of the Large Family Room at Hotel Teesta, Darjeeling",
     images: ["/images/teesta-room-seating.webp"],
   },
 ];

@@ -157,7 +157,9 @@ export function Rooms() {
               onClick={() => pick(i)}
               aria-label={i === active ? `Book ${r.name}` : `Show ${r.name}`}
             >
-              <Image src={r.image} alt="" fill sizes="320px" className="object-cover" draggable={false} />
+              {/* The button carries its own aria-label, so this alt isn't read as the button's name;
+                  it describes the photo for image search. */}
+              <Image src={r.image} alt={r.imageAlt} fill sizes="320px" className="object-cover" draggable={false} />
               <span className="ring-card-shade" />
               <span className="ring-card-label">
                 <span className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-gold-bright">0{i + 1}</span>

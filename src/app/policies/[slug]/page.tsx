@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { hotel } from "@/content/site";
 import { policies, policyLinks } from "@/content/policies";
+import { JsonLd } from "@/components/JsonLd";
+import { policySchema } from "@/lib/schema";
 
 type Slug = keyof typeof policies;
 
@@ -13,7 +15,14 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const p = policies[slug as Slug];
-  return p ? { title: `${p.title} · ${hotel.name}` } : {};
+  if (!p) return {};
+  return {
+    title: p.title, // the layout template adds "· Hotel Teesta"
+    // Each policy needs its own description; otherwise all three inherit the site-wide one.
+    description: p.intro,
+    // And its own canonical, so it doesn't inherit the layout's "/".
+    alternates: { canonical: `/policies/${slug}` },
+  };
 }
 
 export default async function PolicyPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -23,6 +32,7 @@ export default async function PolicyPage({ params }: { params: Promise<{ slug: s
 
   return (
     <div className="min-h-[100svh] bg-ink px-5 pb-24 pt-8 sm:px-8">
+      <JsonLd data={policySchema(slug, p.title, p.intro)} />
       <div className="mx-auto max-w-3xl">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-gold-bright">
           ← {hotel.name}
