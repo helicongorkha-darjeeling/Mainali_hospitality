@@ -37,7 +37,8 @@ export const contentPages: Record<PageSlug, { title: string; nav: string; descri
     title: `About ${hotel.name}`,
     nav: "About",
     description: `${hotel.name} is run by ${hotel.brand} in central ${hotel.city}, a minute from the bus stand.`,
-    draft: true,
+    // Copy approved by the owner, 27 Oct 2026. Live: indexable, in the sitemap and the footer.
+    draft: false,
   },
 };
 
