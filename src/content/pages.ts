@@ -127,6 +127,9 @@ export const routes: { from: string; distance: Copy; time: Copy; note: Copy }[] 
 /** One paragraph answering "how do I get to the hotel?" before the table. */
 export const gettingHereIntro: Copy = null;
 
+/** What the hotel charges to collect a guest, and how far ahead to ask. */
+export const pickupCosts: Copy = null;
+
 /** How to find the door once you are at the bus stand. */
 export const lastMile: Copy = null;
 

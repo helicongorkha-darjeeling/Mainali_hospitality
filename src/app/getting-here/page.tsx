@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { hotel } from "@/content/site";
-import { contentPages, gettingHereIntro, lastMile, routes } from "@/content/pages";
+import { contentPages, gettingHereIntro, lastMile, pickupCosts, routes } from "@/content/pages";
 import { Needed, PageShell } from "@/components/PageShell";
 import { JsonLd } from "@/components/JsonLd";
 import { pageSchema } from "@/lib/schema";
@@ -68,9 +68,13 @@ export default function GettingHerePage() {
 
       <h2 className="mt-14 text-lg font-semibold">Can the hotel pick me up?</h2>
       <p className="mt-2 leading-relaxed text-ivory/75">{hotel.pickup}</p>
-      <div className="mt-3">
-        <Needed>What a pickup costs from each place, and how far ahead to ask.</Needed>
-      </div>
+      {pickupCosts ? (
+        <p className="mt-3 leading-relaxed text-ivory/75">{pickupCosts}</p>
+      ) : (
+        <div className="mt-3">
+          <Needed>What a pickup costs from each place, and how far ahead to ask.</Needed>
+        </div>
+      )}
 
       <h2 className="mt-14 text-lg font-semibold">Finding the door</h2>
       {lastMile ? (
