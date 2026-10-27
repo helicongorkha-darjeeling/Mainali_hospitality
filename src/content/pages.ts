@@ -120,7 +120,12 @@ export const faq: { q: string; a: Copy }[] = [
 
 /** TODO(client): real distance and journey time for each route, plus what a car costs. */
 export const routes: { from: string; distance: Copy; time: Copy; note: Copy }[] = [
-  { from: "Bagdogra Airport (IXB)", distance: null, time: null, note: null },
+  {
+    from: "Bagdogra Airport (IXB)",
+    distance: null, // TODO(client)
+    time: "About 3 hours",
+    note: "Via Kurseong road, the scenic way up — it is the drive people remember.",
+  },
   { from: "New Jalpaiguri station (NJP)", distance: null, time: null, note: null },
   { from: "Siliguri", distance: null, time: null, note: null },
   { from: "Gangtok", distance: null, time: null, note: null },
@@ -140,7 +145,7 @@ export const lastMile: Copy = null;
 export const about: { heading: string; body: Copy }[] = [
   {
     heading: `Who runs ${hotel.name}?`,
-    body: `${hotel.name} is run by ${hotel.brand}, which also runs its own fleet of cars: sightseeing trips, pickups and drops from the airport and the station, and taxis around town. The room and the travel are arranged by the same people, so a car can be sorted at the desk.`,
+    body: `${hotel.name} is run by ${hotel.brand}, which also runs its own fleet of cars with 13 drivers: sightseeing trips, pickups and drops from the airport and the station, and taxis around town. The room and the travel are arranged by the same people, so a car can be sorted at the desk.`,
   },
   {
     heading: "What kind of stay is it?",
