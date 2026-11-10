@@ -103,6 +103,12 @@ Examples: eZee Absolute, Hotelogix, Djubo, STAAH, AxisRooms, Cloudbeds. You get 
 - **Website:** `/api/availability` (cached 60 s at the CDN) and `/api/bookings` (hold, confirm). The booking page shows "Only X left" or "Sold out", caps rooms at what's free, says "held for you for 30 minutes", and recovers from "just sold out".
 - **Until `CHART_API_URL` and `CHART_API_SECRET` are set in Vercel, the site books exactly as before.**
 
+### Hardened (2026-11-10, see `DECISIONS.md`)
+- **The website checks every request before it reaches the chart:** real dates, at most 30 nights, at most a year ahead, at most 20 guests, no more rooms than guests, enough beds. The cell label is written by the server and ends with the total to collect: `… · 2 pax · CP · +9198… · ₹4,123`.
+- **Daily cap:** the script writes at most 150 website room-nights a day (`DAILY_WEB_ROOM_NIGHTS`). Past that it answers `limit`, and the guest sees the "couldn't hold your rooms" message with a WhatsApp link. The count is kept in the script's properties (`webQuota`) and starts again each day.
+- **Chart connected but not answering:** the guest is not sent to payment (`payWithoutHold` in `src/content/booking.ts`).
+- **The script won't run with the placeholder secret**, and errors go to the Apps Script log (Executions), not back to the website.
+
 ### Go live (owner)
 1. Upload the `.xlsx` to the hotel Google account's Drive, open it, then **File → Save as Google Sheets**. From then on the desk works in that file only.
 2. Fix these typos in the chart:

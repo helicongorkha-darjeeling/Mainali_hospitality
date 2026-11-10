@@ -4,6 +4,47 @@ Newest first. Each entry: what was decided, why, and what's still open.
 
 ---
 
+## 2026-11-10: security review, and what changed
+
+A review of the site, the database function and the two Apps Scripts found ten things. Eight are fixed in code; the rest need the owner (list at the end).
+
+**Leads go through the website's server.** The browser used to call the database function `capture_lead` itself, with the public key. So anyone could call it too, with any name, any rooms and any total, as often as they liked. Now the browser posts to `/api/leads`, and the server checks the request, limits how often one address can post, and writes the row.
+
+**The total the desk sees is worked out on the server**, from the rooms, guests, nights and meal plan, with the same `quote()` the page uses. The desk checks payments against that number, so it can't be one the guest's browser sends. The chart cell carries it too: `WEB · TST-… · Asha Rai · 2 pax · CP · +9198… · ₹4,123 · VERIFY PAY`.
+
+**Nothing a visitor types can become a formula in the sheets.** A name like `=IMPORTDATA(…)` used to land in the Leads sheet as a live formula, which can send the sheet's contents to another site. It is now stopped in three places: `capture_lead` strips leading `= + - @`, the Leads script writes text as text, and the chart label keeps only letters in the name and digits in the phone.
+
+**Booking requests are checked on the server** (`src/lib/api.ts`). The page offers nothing outside these, so a real guest never meets them:
+
+| Limit | Value | Where to change it |
+|---|---|---|
+| Guests per booking | 20 | `bookingLimits` in `src/content/booking.ts` |
+| Nights per booking | 30 | same |
+| How far ahead | 365 days | same |
+| Rooms per booking | no more rooms than guests, and enough beds for everyone | `src/app/api/bookings/route.ts` |
+| Website room-nights written to the chart per day | 150 | `DAILY_WEB_ROOM_NIGHTS` in `google/room-chart.gs` |
+| New leads | 100 per 10 minutes, all visitors together | `capture_lead` (migration `20261110090000`) |
+| Requests from one address in 10 minutes | 12 bookings, 120 leads, 120 availability | the route files |
+
+Before this, one request could mark all 25 rooms booked for 30 nights with no hold and no payment, and repeat it for every month. Larger groups and longer stays go through the front desk, as the page says.
+
+**If the chart is connected but doesn't answer, the guest is not asked to pay.** They see "We couldn't hold your rooms just now" with a WhatsApp link, and the desk already has their number in the Leads sheet. Before, the site took payment with no room held. To go back to that, set `payWithoutHold = true` in `src/content/booking.ts`. With no chart connected at all, the site books as before.
+
+**Headers.** A Content-Security-Policy and a Permissions-Policy (`next.config.ts`). The page may only load its own files and the Google map, and may only send data to its own server. A new third-party service (analytics, a payment gateway, a chat widget) must be added there or the browser will block it.
+
+**Scripts.** Both Apps Scripts refuse to run with the secret still set to `PASTE_SECRET_HERE`, and the chart script no longer sends its error text back to the website (it's in the Apps Script log: Executions).
+
+**What this does not fix.** There is no payment gateway, so "I've paid" is still the guest's word, and the desk must check every payment in the bank app before confirming (the cell says VERIFY PAY for that reason). Someone determined can still block up to 150 room-nights a day in the chart, 12 requests at a time; the desk would see it and can clear the cells. The request limits are counted per server copy, so they slow one address down rather than stop a wide attack; a Vercel Firewall rate-limit rule on `/api/*` is the stronger version.
+
+**Open (owner):**
+1. Run `supabase/migrations/20261110090000_capture_lead_hardening.sql` in the Supabase SQL editor.
+2. Paste the new `google/leads-sheet.gs` into the Leads sheet's script (keep the same secret) and deploy a **new version** of the same deployment, so the URL doesn't change.
+3. When the chart is connected, use the new `google/room-chart.gs`.
+4. Create a Supabase secret key, add it to Vercel as `SUPABASE_SECRET_KEY`, redeploy, open `/api/leads` and check it says `"serverKey":"working"`. Then run `supabase/manual/lock_down_capture_lead.sql`. From then on only the website's server can write leads. Until this is done, the database function can still be called directly, but it now cleans what it stores and caps how many rows can be added.
+5. Email: turn on DKIM for the domain, then move DMARC from `p=none` to `quarantine`, later `reject`.
+6. GitHub: protect `main` (no force pushes, no deletion).
+7. Decide how long to keep leads that never became bookings. Nothing deletes them today; the privacy policy promises deletion once they're no longer needed.
+
 ## 2026-10-25: the booking chart is the master for rooms (Option A)
 
 **Decision:** the front desk's booking chart, converted to Google Sheets, is the one source of truth for which rooms are free. The website reads availability from it and writes its own bookings into it through an Apps Script web app inside the chart (`google/room-chart.gs`). See `AVAILABILITY_SYNC_PLAN.md`.

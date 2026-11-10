@@ -17,6 +17,9 @@ Open http://localhost:3000.
 |---|---|
 | All copy, rooms, phones, address | `src/content/site.ts` |
 | Booking (WhatsApp now, Supabase later) | `src/lib/booking.ts` |
+| Leads for the front desk (server checks, then Supabase) | `src/app/api/leads/route.ts`, `src/lib/lead-store.ts` |
+| Booking limits (guests, nights, how far ahead) | `bookingLimits` in `src/content/booking.ts`, enforced in `src/lib/api.ts` |
+| What the browser may load (Content-Security-Policy) | `next.config.ts` |
 | Book Now (fixed, screen centre) | `src/components/BookNow.tsx` + `.bn-*` in `src/app/globals.css` |
 | Scroll-scrubbed hero video + chapters | `src/components/Hero.tsx`, chapter text in `heroChapters` (`site.ts`) |
 | Gallery fly-through | `src/components/three/GalleryScene.tsx` |
