@@ -1,0 +1,14 @@
+# Dependabot opens a pull request when a package the site uses has an update.
+# Security fixes come as soon as they're published; everything else arrives once a month, grouped,
+# so there are a couple of pull requests to look at rather than dozens.
+# The alerts themselves are switched on in the repository's Settings on GitHub (Dependabot alerts).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
