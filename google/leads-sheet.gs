@@ -32,6 +32,8 @@ function doPost(e) {
   } catch (err) {
     return text("bad request");
   }
+  // Pasted without the real secret: the placeholder is public (it's in the code on GitHub), so refuse everyone.
+  if (SECRET.indexOf("PASTE_") === 0) return text("not configured");
   if (!data || data.secret !== SECRET || !data.record || !data.record.id) return text("forbidden");
 
   const lock = LockService.getScriptLock();
@@ -45,19 +47,19 @@ function doPost(e) {
     const row = found >= 0 ? found + 2 : last + 1;
 
     const values = [
-      r.id,
+      plain(r.id),
       new Date(r.updated_at || Date.now()),
-      STAGE_LABEL[r.stage] || r.stage,
-      r.name || "",
+      STAGE_LABEL[r.stage] || plain(r.stage),
+      plain(r.name),
       r.phone ? "'" + r.phone : "", // keep "+91…" as text, not a formula
-      r.email || "",
-      r.check_in || "",
-      r.check_out || "",
-      r.guests || "",
-      r.rooms || "",
-      r.meal_plan || "",
-      r.total || "",
-      r.booking_id || "",
+      plain(r.email),
+      plain(r.check_in),
+      plain(r.check_out),
+      plain(r.guests),
+      plain(r.rooms),
+      plain(r.meal_plan),
+      plain(r.total),
+      plain(r.booking_id),
     ];
     sh.getRange(row, 1, 1, WRITTEN).setValues([values]);
     if (found < 0) sh.getRange(row, WRITTEN + 1).insertCheckboxes(); // "Called?" tick box for new rows
@@ -77,6 +79,16 @@ function sheet() {
     sh.getRange("B:B").setNumberFormat("dd mmm yyyy, h:mm am/pm");
   }
   return sh;
+}
+
+/**
+ * What a visitor typed must stay text. Sheets runs any cell that starts with = + - or @ as a formula,
+ * and a formula could send this sheet's names and phone numbers somewhere else. A leading ' keeps it as text.
+ */
+function plain(v) {
+  if (v == null || v === "") return "";
+  if (typeof v !== "string") return v;
+  return /^[=+\-@\t\r\n]/.test(v) ? "'" + v : v;
 }
 
 function text(s) {
