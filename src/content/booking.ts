@@ -49,6 +49,20 @@ export const cancellationRules = [
 ];
 
 /**
+ * What can be booked online. The server checks the same numbers (src/lib/api.ts), and the booking chart
+ * script has its own copy (30 nights, 400 days ahead in google/room-chart.gs): keep them in step.
+ * Bigger groups and longer stays go through the front desk.
+ */
+export const bookingLimits = { maxGuests: 20, maxNights: 30, maxDaysAhead: 365 };
+
+/**
+ * When the booking chart is connected but can't be reached as the guest taps "Continue to payment":
+ * false = don't take payment; ask them to try again or message the front desk, so a taken room is never sold.
+ * true = let them pay anyway and leave it to the desk to find a room.
+ */
+export const payWithoutHold = false;
+
+/**
  * UPI merchant account (ICICI Bank eazypay). Values are exactly as encoded in the merchant's QR:
  *   upi://pay?pa=7430838048.eazypay@icici&pn=HOTEL SAGARMATHA&tr=EZYS7430838048&cu=INR&mc=5172
  * The site adds only the amount (am) and a note with the booking ID (tn).
