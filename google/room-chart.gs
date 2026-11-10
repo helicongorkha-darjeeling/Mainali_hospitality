@@ -25,6 +25,10 @@ const ROOM_TYPES = {
 };
 const ROOMS = [301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325];
 const HOLD_MINUTES = 30;
+// The website can't prove a payment (the desk verifies each one), so anyone could send booking after booking.
+// This is the most room-nights it may hold or book in one day: 150 is the whole hotel for 6 nights.
+// Past it the website says "message the front desk" until tomorrow. Bookings typed by the desk don't count.
+const DAILY_WEB_ROOM_NIGHTS = 150;
 const COLOR_HOLD = "#fce8b2"; // amber: held while the guest pays
 const COLOR_WEB = "#c6efce"; // green: booked on the website, payment to verify
 const MONTHS = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
@@ -42,6 +46,8 @@ function doPost(e) {
   } catch (err) {
     return json({ ok: false, reason: "bad request" });
   }
+  // Pasted without the real secret: the placeholder is public (it's in the code on GitHub), so refuse everyone.
+  if (SECRET.indexOf("PASTE_") === 0) return json({ ok: false, reason: "forbidden" });
   if (!d || d.secret !== SECRET) return json({ ok: false, reason: "forbidden" });
   if (d.action === "availability") return json(availability(d.checkIn, d.checkOut)); // read only, no lock
 
@@ -52,7 +58,8 @@ function doPost(e) {
     if (d.action === "confirm") return json(confirm(d));
     return json({ ok: false, reason: "unknown action" });
   } catch (err) {
-    return json({ ok: false, reason: "error", message: String(err) });
+    console.error(err); // details stay in Apps Script → Executions; the website only learns that it failed
+    return json({ ok: false, reason: "error" });
   } finally {
     lock.releaseLock();
   }
@@ -96,10 +103,12 @@ function place(d, hold) {
   const cells = readNights(ix, req.nights);
 
   const mine = cellsOf(req.id, cells);
-  if (mine.length) {
-    if (!hold || !mine.every(isHold)) return { ok: true, assigned: roomsOf(mine) }; // already booked: same answer again
-    mine.forEach(clearCell); // the guest went back and changed something: place it again
-  }
+  if (mine.length && (!hold || !mine.every(isHold))) return { ok: true, assigned: roomsOf(mine) }; // already booked: same answer again
+
+  // The day's allowance for the website, checked before anything is written or cleared.
+  const want = Object.keys(req.rooms).reduce((n, t) => n + req.rooms[t], 0) * req.nights.length;
+  if (!webQuota(want - roomNightsOf(req.id, cells))) return { ok: false, reason: "limit" };
+  mine.forEach(clearCell); // the guest went back and changed something: place it again
 
   const assigned = {};
   const writes = [];
@@ -107,7 +116,10 @@ function place(d, hold) {
     const qty = req.rooms[type] || 0;
     if (!qty) continue;
     const free = ROOM_TYPES[type].filter((room) => req.nights.every((n) => isFree(cells[n][room])));
-    if (free.length < qty) return { ok: false, reason: "sold_out", type: type, left: free.length };
+    if (free.length < qty) {
+      webQuota(-want); // nothing was written
+      return { ok: false, reason: "sold_out", type: type, left: free.length };
+    }
     assigned[type] = free.slice(0, qty);
     assigned[type].forEach((room) => req.nights.forEach((n) => cells[n][room].forEach((c) => writes.push(c))));
   }
@@ -286,6 +298,34 @@ function cellsOf(id, cells) {
     Object.keys(cells[n]).forEach((room) => cells[n][room].forEach((c) => c.text.indexOf(id) >= 0 && found.push(c)))
   );
   return found;
+}
+
+/** Room-nights this booking ID already has in the stay (a night that sits in two tabs counts once). */
+function roomNightsOf(id, cells) {
+  let n = 0;
+  Object.keys(cells).forEach((night) =>
+    Object.keys(cells[night]).forEach((room) => cells[night][room].some((c) => c.text.indexOf(id) >= 0) && n++)
+  );
+  return n;
+}
+
+/**
+ * Keeps count of the room-nights the website has held or booked today, and says no past DAILY_WEB_ROOM_NIGHTS.
+ * add > 0 asks for that many more (false = over the limit, nothing counted). add < 0 gives some back.
+ */
+function webQuota(add) {
+  const props = PropertiesService.getScriptProperties();
+  const today = Utilities.formatDate(new Date(), SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "yyyy-MM-dd");
+  let used = 0;
+  try {
+    const saved = JSON.parse(props.getProperty("webQuota") || "{}");
+    if (saved.day === today) used = Number(saved.used) || 0;
+  } catch (err) {
+    used = 0;
+  }
+  if (add > 0 && used + add > DAILY_WEB_ROOM_NIGHTS) return false;
+  props.setProperty("webQuota", JSON.stringify({ day: today, used: Math.max(0, used + add) }));
+  return true;
 }
 
 /** { king: [301, 302], … } from a list of cells. */
