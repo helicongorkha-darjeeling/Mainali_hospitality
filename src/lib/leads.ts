@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Lead capture: as soon as a visitor leaves a phone number, it lands in Supabase (`public.leads`)
- * so the front desk can call them, booked or not. Later steps update the same row.
+ * Lead capture: as soon as a visitor leaves a phone number, it goes to the front desk's leads list
+ * so they can call, booked or not. Later steps update the same row.
  *
- * The site can only call the `capture_lead` function; it can't read any leads.
- * The URL and publishable key are public by design (they ship to every browser).
+ * The browser sends what the guest chose to /api/leads. The server checks it, works out the total
+ * and writes the row; the browser never talks to the database and can't read any leads.
  */
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://fbpxnrpjvskknzlyvceq.supabase.co";
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_0dlfpCgqJiLbbg038WcS9w_UWw2DpcB";
+import type { MealPlanCode } from "@/content/booking";
+import type { RoomQty } from "@/lib/pricing";
 
 export type LeadStage = "details" | "rooms" | "review" | "payment" | "booked";
 
@@ -19,12 +19,14 @@ export type Lead = {
   checkIn?: string;
   checkOut?: string;
   guests?: number;
-  rooms?: string;
-  mealPlan?: string;
-  total?: number;
+  rooms?: RoomQty;
+  plan?: MealPlanCode;
   stage: LeadStage;
   bookingId?: string;
-  upiRef?: string;
+  /** Room numbers the booking chart gave this booking, e.g. "301, 302". */
+  roomNumbers?: string;
+  /** Set when the guest says they've paid but the chart couldn't take the booking: the desk must call. */
+  chart?: "no_room" | "not_updated";
 };
 
 const ID_KEY = "teesta.lead.id";
@@ -53,26 +55,12 @@ let last = "";
 /** Fire-and-forget. Never blocks or breaks the booking flow. */
 export function captureLead(l: Lead) {
   if (!isPhone(l.phone)) return;
-  const body = JSON.stringify({
-    p_id: leadId(),
-    p_phone: l.phone,
-    p_name: l.name || null,
-    p_email: l.email || null,
-    p_check_in: l.checkIn || null,
-    p_check_out: l.checkOut || null,
-    p_guests: l.guests ?? null,
-    p_rooms: l.rooms || null,
-    p_meal_plan: l.mealPlan || null,
-    p_total: l.total != null ? Math.round(l.total) : null,
-    p_stage: l.stage,
-    p_booking_id: l.bookingId || null,
-    p_upi_ref: l.upiRef || null,
-  });
+  const body = JSON.stringify({ id: leadId(), ...l });
   if (body === last) return; // nothing new
   last = body;
-  fetch(`${SUPABASE_URL}/rest/v1/rpc/capture_lead`, {
+  fetch("/api/leads", {
     method: "POST",
-    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body,
     keepalive: true, // still sends if the page is closed or the UPI app opens
   }).catch(() => {});

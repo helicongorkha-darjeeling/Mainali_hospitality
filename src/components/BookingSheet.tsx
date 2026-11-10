@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useBooking } from "./BookingProvider";
 import { getLenis } from "./SmoothScroll";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
+import { bookingLimits } from "@/content/booking";
 import { bookingToMailto, bookingToWhatsAppUrl } from "@/lib/booking";
 import { addDays, allocateRooms, describeRooms, nightsBetween, todayISO } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
@@ -63,10 +64,11 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
   const [init] = useState(() => {
     const d = loadDraft();
     const today = todayISO();
-    const checkIn = d.checkIn && d.checkIn >= today ? d.checkIn : today;
-    const checkOut = d.checkOut && d.checkOut > checkIn ? d.checkOut : addDays(checkIn, 1);
+    const lastDay = addDays(today, bookingLimits.maxDaysAhead);
+    const checkIn = d.checkIn && d.checkIn >= today && d.checkIn <= lastDay ? d.checkIn : today;
+    const checkOut = d.checkOut && d.checkOut > checkIn && d.checkOut <= addDays(checkIn, bookingLimits.maxNights) ? d.checkOut : addDays(checkIn, 1);
     const fromRoom = rooms.find((r) => r.slug === initialRoom)?.maxGuests;
-    return { today, checkIn, checkOut, guests: fromRoom ?? d.guests ?? 2, title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "" };
+    return { today, lastDay, checkIn, checkOut, guests: fromRoom ?? d.guests ?? 2, title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "" };
   });
   const [checkIn, setCheckIn] = useState(init.checkIn);
   const [checkOut, setCheckOut] = useState(init.checkOut);
@@ -82,16 +84,18 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
   }, [router]);
 
   const nights = nightsBetween(checkIn, checkOut);
-  const plan = useMemo(() => describeRooms(allocateRooms(guests, roomSlug)), [guests, roomSlug]);
+  const picked = useMemo(() => allocateRooms(guests, roomSlug), [guests, roomSlug]);
+  const plan = describeRooms(picked);
   const req = { checkIn, checkOut, guests, room: roomSlug, title, name, phone };
 
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
     if (checkOut <= v) setCheckOut(addDays(v, 1));
+    else if (checkOut > addDays(v, bookingLimits.maxNights)) setCheckOut(addDays(v, bookingLimits.maxNights));
   };
 
   // the phone number is the lead: save it as soon as it's entered, booked or not
-  const lead = () => captureLead({ phone, name: fullName(title, name), checkIn, checkOut, guests, rooms: plan, stage: "details" });
+  const lead = () => captureLead({ phone, name: fullName(title, name), checkIn, checkOut, guests, rooms: picked, stage: "details" });
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -105,16 +109,16 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
     <form onSubmit={submit} className="mt-7 grid grid-cols-2 gap-3" autoComplete="on">
       <label className="field">
         <span>Check-in</span>
-        <input type="date" name="check-in" required min={init.today} value={checkIn} onChange={(e) => changeCheckIn(e.target.value)} />
+        <input type="date" name="check-in" required min={init.today} max={init.lastDay} value={checkIn} onChange={(e) => changeCheckIn(e.target.value)} />
       </label>
       <label className="field">
         <span>Check-out · {nights} night{nights > 1 ? "s" : ""}</span>
-        <input type="date" name="check-out" required min={addDays(checkIn, 1)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+        <input type="date" name="check-out" required min={addDays(checkIn, 1)} max={addDays(checkIn, bookingLimits.maxNights)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
       </label>
       <label className="field">
         <span>Guests</span>
         <select value={guests} onChange={(e) => setGuests(Number(e.target.value))}>
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+          {Array.from({ length: bookingLimits.maxGuests }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
           ))}
         </select>

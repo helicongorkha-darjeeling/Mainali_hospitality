@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
-import { directThanks, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
+import { bookingLimits, directThanks, frontDeskPerk, mealPlans, payWithoutHold, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
 import {
   addDays,
   allocateRooms,
@@ -57,13 +57,14 @@ export function BookingFlow() {
   const [init] = useState(() => {
     const d = loadDraft();
     const today = todayISO();
+    const lastDay = addDays(today, bookingLimits.maxDaysAhead);
     const pIn = params.get("in") ?? d.checkIn;
-    const checkIn = pIn && pIn >= today ? pIn : today;
+    const checkIn = pIn && pIn >= today && pIn <= lastDay ? pIn : today;
     const pOut = params.get("out") ?? d.checkOut;
-    const checkOut = pOut && pOut > checkIn ? pOut : addDays(checkIn, 1);
-    const guests = Math.min(20, Math.max(1, Number(params.get("g") ?? d.guests ?? 2) || 2));
+    const checkOut = pOut && pOut > checkIn && pOut <= addDays(checkIn, bookingLimits.maxNights) ? pOut : addDays(checkIn, 1);
+    const guests = Math.min(bookingLimits.maxGuests, Math.max(1, Math.floor(Number(params.get("g") ?? d.guests ?? 2)) || 2));
     const room = params.get("room") ?? d.room;
-    return { today, checkIn, checkOut, guests, room: isRoom(room) ? room : ("" as const), title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
+    return { today, lastDay, checkIn, checkOut, guests, room: isRoom(room) ? room : ("" as const), title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
   });
 
   const [step, setStep] = useState<Step>("rooms");
@@ -89,7 +90,12 @@ export function BookingFlow() {
   const [held, setHeld] = useState(""); // room numbers held in the chart for this booking, e.g. "301, 302"
   const [holding, setHolding] = useState(false);
   const [notice, setNotice] = useState(""); // "just sold out" message on the rooms step
-  const [unplaced, setUnplaced] = useState(false); // paid, but the chart had no room left: the desk calls them
+  const [unplaced, setUnplaced] = useState(false); // paid, but the chart couldn't take the booking: the desk calls them
+  const [holdFailed, setHoldFailed] = useState(false); // the chart couldn't be reached, so we didn't go on to payment
+  const holdNotice = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (holdFailed) holdNotice.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [holdFailed]);
   const stayKey = `${checkIn}_${checkOut}`;
   const limits = avail?.key === stayKey ? avail.free : inventory;
   const best = useMemo(() => allocateRooms(guests, "", limits), [guests, limits]);
@@ -124,13 +130,15 @@ export function BookingFlow() {
   useEffect(() => {
     if (!init.phone) return;
     const r = allocateRooms(init.guests, init.room);
-    captureLead({ phone: init.phone, name: fullName(init.title, init.name), checkIn: init.checkIn, checkOut: init.checkOut, guests: init.guests, rooms: describeRooms(r), stage: "rooms" });
+    captureLead({ phone: init.phone, name: fullName(init.title, init.name), checkIn: init.checkIn, checkOut: init.checkOut, guests: init.guests, rooms: r, stage: "rooms" });
   }, [init]);
 
   const nights = nightsBetween(checkIn, checkOut);
   const q = useMemo(() => quote(qty, guests, nights, plan), [qty, guests, nights, plan]);
   const cap = totalCapacity(qty);
-  const roomsOk = totalRooms(qty) > 0 && cap >= guests;
+  // the server refuses anything outside these limits (src/lib/api.ts), so the page doesn't offer it
+  const stayOk = checkIn >= init.today && checkIn <= init.lastDay && checkOut > checkIn && nights <= bookingLimits.maxNights;
+  const roomsOk = stayOk && totalRooms(qty) > 0 && totalRooms(qty) <= guests && cap >= guests;
   const bedsLeft = totalCapacity(limits);
   const mealName = mealPlans.find((m) => m.code === plan)!.name;
 
@@ -146,12 +154,11 @@ export function BookingFlow() {
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
     if (checkOut <= v) setCheckOut(addDays(v, 1));
+    else if (checkOut > addDays(v, bookingLimits.maxNights)) setCheckOut(addDays(v, bookingLimits.maxNights));
   };
 
-  // what the desk sees in the leads sheet: "2 × The King · rooms 301, 302"
-  const roomsText = (h = held) => describeRooms(qty) + (h ? ` · room${h.includes(",") ? "s" : ""} ${h}` : "");
-
-  // lead row in Supabase: the same row moves forward as the guest does
+  // lead row for the front desk: the same row moves forward as the guest does.
+  // The server writes the wording and the total ("2 × The King · rooms 301, 302", ₹4,123) from these choices.
   const lead = (stage: LeadStage, extra: Partial<Lead> = {}) =>
     captureLead({
       phone,
@@ -160,9 +167,9 @@ export function BookingFlow() {
       checkIn,
       checkOut,
       guests,
-      rooms: roomsText(),
-      mealPlan: plan,
-      total: q.total,
+      rooms: qty,
+      plan,
+      roomNumbers: held || undefined,
       stage,
       ...extra,
     });
@@ -190,6 +197,7 @@ export function BookingFlow() {
     saveDraft({ checkIn, checkOut, guests, room: "", title, name, phone, email });
     const id = bookingId || newBookingId();
     setBookingId(id);
+    setHoldFailed(false);
     setHolding(true);
     const r = await chart("hold", id);
     setHolding(false);
@@ -201,10 +209,16 @@ export function BookingFlow() {
       go("rooms");
       return;
     }
-    // chart not reachable: carry on, the desk still gets the booking in the leads sheet
+    // The chart is connected but didn't answer: don't take payment for a room we couldn't hold.
+    // The desk already has this guest's number from the review step.
+    if (!r.ok && r.reason !== "not_configured" && !payWithoutHold) {
+      setHoldFailed(true);
+      return;
+    }
+    // no chart connected (or payWithoutHold): carry on, the desk still gets the booking in the leads sheet
     const h = r.ok ? roomNumbers(r.assigned) : "";
     setHeld(h);
-    lead("payment", { bookingId: id, rooms: roomsText(h) });
+    lead("payment", { bookingId: id, roomNumbers: h || undefined });
     go("pay");
   };
   const finish = () => {
@@ -216,11 +230,12 @@ export function BookingFlow() {
         const h = roomNumbers(r.assigned);
         if (h && h !== held) {
           setHeld(h);
-          lead("booked", { bookingId, rooms: roomsText(h) });
+          lead("booked", { bookingId, roomNumbers: h });
         }
-      } else if (r.reason === "sold_out") {
+      } else if (r.reason !== "not_configured") {
+        // the guest says they've paid but the chart doesn't show the booking: the desk must call
         setUnplaced(true);
-        lead("booked", { bookingId, rooms: `${describeRooms(qty)} · NO ROOM IN CHART, call guest` });
+        lead("booked", { bookingId, chart: r.reason === "sold_out" ? "no_room" : "not_updated" });
       }
     });
   };
@@ -295,16 +310,16 @@ export function BookingFlow() {
               <div className="bk-stay">
                 <label className="field">
                   <span>Check-in</span>
-                  <input type="date" min={init.today} value={checkIn} onChange={(e) => changeCheckIn(e.target.value)} />
+                  <input type="date" min={init.today} max={init.lastDay} value={checkIn} onChange={(e) => changeCheckIn(e.target.value)} />
                 </label>
                 <label className="field">
                   <span>Check-out · {nights} night{nights > 1 ? "s" : ""}</span>
-                  <input type="date" min={addDays(checkIn, 1)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
+                  <input type="date" min={addDays(checkIn, 1)} max={addDays(checkIn, bookingLimits.maxNights)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
                 </label>
                 <label className="field">
                   <span>Guests</span>
                   <select value={guests} onChange={(e) => changeGuests(Number(e.target.value))}>
-                    {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                    {Array.from({ length: bookingLimits.maxGuests }, (_, i) => i + 1).map((n) => (
                       <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
                     ))}
                   </select>
@@ -315,11 +330,13 @@ export function BookingFlow() {
               <p className={`bk-fit ${roomsOk ? "" : "bk-fit-warn"}`} aria-live="polite">
                 {roomsOk
                   ? `${describeRooms(qty)} · sleeps ${cap}, picked for ${guests} guest${guests > 1 ? "s" : ""}`
-                  : bedsLeft < guests
-                    ? bedsLeft
-                      ? `Only ${bedsLeft} beds left for these dates. Call the front desk for a bigger group.`
-                      : "Sold out for these dates. Try other dates, or call the front desk."
-                    : `Add rooms: ${guests} guests need ${guests - cap} more bed${guests - cap > 1 ? "s" : ""}.`}
+                  : !stayOk
+                    ? `Stays of up to ${bookingLimits.maxNights} nights, up to a year ahead, can be booked here. For anything else, call the front desk.`
+                    : bedsLeft < guests
+                      ? bedsLeft
+                        ? `Only ${bedsLeft} beds left for these dates. Call the front desk for a bigger group.`
+                        : "Sold out for these dates. Try other dates, or call the front desk."
+                      : `Add rooms: ${guests} guests need ${guests - cap} more bed${guests - cap > 1 ? "s" : ""}.`}
               </p>
 
               <div className="bk-rooms">
@@ -347,7 +364,8 @@ export function BookingFlow() {
                       <Stepper
                         label={r.name}
                         value={qty[r.slug]}
-                        max={limits[r.slug]}
+                        // never more rooms than guests: each room needs someone in it
+                        max={Math.min(limits[r.slug], qty[r.slug] + Math.max(0, guests - totalRooms(qty)))}
                         onChange={(n) => setQty((x) => ({ ...x, [r.slug]: n }))}
                       />
                     </div>
@@ -435,6 +453,22 @@ export function BookingFlow() {
                     <Link href="/policies/privacy" target="_blank">Privacy policy</Link>.
                   </span>
                 </label>
+                {holdFailed && (
+                  <p ref={holdNotice} className="bk-notice" role="alert">
+                    We couldn&apos;t hold your rooms just now, so we haven&apos;t asked you to pay. Please try again in a minute, or{" "}
+                    <a
+                      className="underline"
+                      target="_blank"
+                      rel="noopener"
+                      href={`https://wa.me/${hotel.whatsapp}?text=${encodeURIComponent(
+                        `Hello ${hotel.name}, I'd like to book ${describeRooms(qty)} for ${guests} guest${guests > 1 ? "s" : ""}, ${formatFull(checkIn)} to ${formatFull(checkOut)}.`,
+                      )}`}
+                    >
+                      message the front desk on WhatsApp
+                    </a>{" "}
+                    and we&apos;ll book it for you.
+                  </p>
+                )}
                 <div className="bk-cta-inline">{cta}</div>
               </form>
             </>
