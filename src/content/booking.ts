@@ -35,10 +35,10 @@ export const roomGstTiers = [
 export const mealGstRate = 0.05; // TODO(client): confirm
 
 /**
- * Extra mattress, per mattress per night, at most one per room booked.
- * Taxed like the room (5% GST at these tariffs). TODO(client): confirm the per-room limit and GST.
+ * Extra mattress, per mattress per night, up to 5 per booking (owner, 20 Nov 2026).
+ * Taxed like the room (5% GST at these tariffs). TODO(client): confirm the GST.
  */
-export const extraMattress = { perNight: 500, maxPerRoom: 1, gstRate: 0.05 };
+export const extraMattress = { perNight: 500, max: 5, gstRate: 0.05 };
 export const convenienceFee = 0; // booking direct: no convenience fee
 
 /** TODO(client): confirm (taken from the hotel's OTA listing). */

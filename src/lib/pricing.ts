@@ -108,8 +108,8 @@ export type Quote = {
   savings: number;
 };
 
-/** Most extra mattresses the guest can add for these rooms. */
-export const maxMattresses = (q: RoomQty) => totalRooms(q) * extraMattress.maxPerRoom;
+/** Most extra mattresses the guest can add (none until a room is picked). */
+export const maxMattresses = (q: RoomQty) => (totalRooms(q) > 0 ? extraMattress.max : 0);
 
 export function quote(q: RoomQty, guests: number, nights: number, plan: MealPlanCode, extraMattresses = 0): Quote {
   const slugs = Object.keys(q) as RoomSlug[];

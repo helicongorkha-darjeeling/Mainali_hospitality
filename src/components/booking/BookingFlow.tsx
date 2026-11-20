@@ -137,7 +137,7 @@ export function BookingFlow() {
   }, [init]);
 
   const nights = nightsBetween(checkIn, checkOut);
-  const mattresses = Math.min(mattressPick, maxMattresses(qty)); // fewer rooms = fewer mattresses allowed
+  const mattresses = Math.min(mattressPick, maxMattresses(qty));
   const q = useMemo(() => quote(qty, guests, nights, plan, mattresses), [qty, guests, nights, plan, mattresses]);
   const mattressText = mattresses ? `${mattresses} extra mattress${mattresses > 1 ? "es" : ""}` : "";
   const cap = totalCapacity(qty);
@@ -382,7 +382,7 @@ export function BookingFlow() {
                 </span>
                 <span className="bk-extra-text">
                   <span className="bk-meal-name">Extra mattress</span>
-                  <span className="bk-meal-detail">A floor mattress with bedding, for one more guest in a room. Up to {extraMattress.maxPerRoom} per room.</span>
+                  <span className="bk-meal-detail">A floor mattress with bedding, for one more guest in a room. Up to {extraMattress.max} per booking.</span>
                   <span className="bk-meal-price">+ {inr(extraMattress.perNight)} / mattress / night</span>
                 </span>
                 <Stepper value={mattresses} max={maxMattresses(qty)} onChange={setMattresses} label="extra mattress" />
