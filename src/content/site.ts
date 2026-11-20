@@ -140,17 +140,18 @@ export const rooms: Room[] = [
 ];
 
 /**
- * Every room in the hotel, from the daily booking room chart (25 rooms, 3rd floor numbering).
+ * Every room in the hotel (25 rooms, 3rd floor numbering), typed as the front desk's register has them (Nov 2026):
+ * 304 and 306 are 4-bed, 315 is a triple. Keep in step with ROOM_TYPES in google/hotel-sheet.gs.
  * Not shown on the site; used by the booking flow (phase 2: Supabase `room_units`).
  */
 export const roomInventory: { no: string; type: RoomSlug; tv: boolean }[] = [
   { no: "301", type: "king", tv: false }, { no: "302", type: "king", tv: false }, { no: "303", type: "king", tv: false },
-  { no: "304", type: "triple", tv: true }, { no: "305", type: "king", tv: true }, { no: "306", type: "triple", tv: true },
+  { no: "304", type: "quad", tv: true }, { no: "305", type: "king", tv: true }, { no: "306", type: "quad", tv: true },
   { no: "307", type: "quad", tv: true }, { no: "308", type: "quad", tv: true }, { no: "309", type: "quad", tv: true },
   { no: "310", type: "king", tv: false }, { no: "311", type: "king", tv: false }, { no: "312", type: "triple", tv: true },
-  { no: "313", type: "king", tv: true }, { no: "314", type: "king", tv: true }, { no: "315", type: "quad", tv: true },
+  { no: "313", type: "king", tv: true }, { no: "314", type: "king", tv: true }, { no: "315", type: "triple", tv: true },
   { no: "316", type: "quad", tv: true }, { no: "317", type: "quad", tv: true },
-  { no: "CP318", type: "triple", tv: false }, // TODO(client): what does "CP" mean on the chart?
+  { no: "318", type: "triple", tv: false },
   { no: "319", type: "king", tv: false }, { no: "320", type: "king", tv: false }, { no: "321", type: "king", tv: false },
   { no: "322", type: "king", tv: false }, { no: "323", type: "triple", tv: false }, { no: "324", type: "family", tv: false },
   { no: "325", type: "triple", tv: false },

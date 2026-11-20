@@ -1,6 +1,6 @@
 /**
  * The hotel's booking chart (a Google Sheet) is the master for rooms. This talks to the Apps Script web app inside it
- * (google/room-chart.gs). Server only: CHART_API_SECRET never reaches the browser.
+ * (google/hotel-sheet.gs: the Bookings tab of the leads sheet). Server only: CHART_API_SECRET never reaches the browser.
  * Without CHART_API_URL and CHART_API_SECRET the site books as before, with no live availability.
  */
 import type { RoomSlug } from "@/content/site";
@@ -10,7 +10,15 @@ export type ChartReply =
   | { ok: true; free?: RoomQty; assigned?: Partial<Record<RoomSlug, number[]>> }
   | { ok: false; reason: string; type?: RoomSlug; left?: number; free?: RoomQty };
 
-type Booking = { bookingId: string; checkIn: string; checkOut: string; rooms: RoomQty; label: string };
+type Booking = {
+  bookingId: string;
+  checkIn: string;
+  checkOut: string;
+  rooms: RoomQty;
+  label: string;
+  guest?: { name: string; pax: string; plan: string; phone: string };
+  total?: number;
+};
 
 async function call(body: object, timeoutMs: number): Promise<ChartReply> {
   const url = process.env.CHART_API_URL;

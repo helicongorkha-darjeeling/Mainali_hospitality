@@ -4,6 +4,14 @@ Newest first. Each entry: what was decided, why, and what's still open.
 
 ---
 
+## 2026-11-20: rooms live in the leads sheet, as one Bookings list
+
+**Decision:** the front desk keeps one **Bookings** tab (one row per booking, the register's columns) in the leads Google Sheet, instead of a new tab each day. The script `google/hotel-sheet.gs` builds a **Rooms** grid (60 days × 25 rooms, free counts per type) and a **Day** view (check-out / in-house / arrivals), adds the free rooms to each lead and alert email, and serves availability, hold and confirm to the website. It replaces `leads-sheet.gs` and `room-chart.gs`; the month-grid chart plan (Option A below) is superseded. Setup: `ROOMS_SHEET_SETUP.md`.
+
+**Room types (owner, from the register):** 304 and 306 are 4-bed, 315 is a triple, 324 is the big room.
+
+**Security:** the same shared secret as the leads sync (Supabase Vault `sheets_webhook_secret`) is also Vercel's `CHART_API_SECRET`; `CHART_API_URL` is the same web app.
+
 ## 2026-10-25: the booking chart is the master for rooms (Option A)
 
 **Decision:** the front desk's booking chart, converted to Google Sheets, is the one source of truth for which rooms are free. The website reads availability from it and writes its own bookings into it through an Apps Script web app inside the chart (`google/room-chart.gs`). See `AVAILABILITY_SYNC_PLAN.md`.

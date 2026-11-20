@@ -1,10 +1,11 @@
 import { rooms } from "@/content/site";
+import type { MealPlanCode } from "@/content/booking";
 import { chartAvailability, chartBooking } from "@/lib/chart";
-import { emptyQty, inventory } from "@/lib/pricing";
+import { emptyQty, inventory, nightsBetween, quote } from "@/lib/pricing";
 
 const ID = /^TST-\d{6}-[A-Z0-9]{4}$/;
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
-const PLANS = ["EP", "CP", "MAP", "AP"];
+const PLANS: MealPlanCode[] = ["EP", "CP", "MAP", "AP"];
 
 // Best effort, per server instance: stops one visitor from holding every room again and again.
 const recent = new Map<string, number[]>();
@@ -39,17 +40,24 @@ export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
   if (tooMany(ip)) return Response.json({ ok: false, reason: "busy" }, { status: 429 });
 
-  // what the desk reads in the chart cell: "Mr. Helicon Gorkha · 2 pax · CP · +919800000000"
-  const label = [
-    String(b.name ?? "").replace(/[^\p{L}\p{M} .'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60),
-    `${Math.min(20, Math.max(1, Math.floor(Number(b.guests)) || 1))} pax`,
-    PLANS.includes(b.plan) ? b.plan : "",
-    String(b.phone ?? "").replace(/[^\d+]/g, "").slice(0, 16),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // what the desk reads in the Bookings row (NOTES): "Mr. Helicon Gorkha · 2 pax · CP · +919800000000"
+  const name = String(b.name ?? "").replace(/[^\p{L}\p{M} .'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60);
+  const pax = Math.min(20, Math.max(1, Math.floor(Number(b.guests)) || 1));
+  const plan: MealPlanCode | "" = PLANS.includes(b.plan) ? b.plan : "";
+  const phone = String(b.phone ?? "").replace(/[^\d+]/g, "").slice(0, 16);
+  // the amount the guest is asked to pay, worked out here rather than trusted from the browser
+  const total = plan ? quote(qty, pax, nightsBetween(b.checkIn, b.checkOut), plan).total : 0;
+  const label = [name, `${pax} pax`, plan, phone].filter(Boolean).join(" · ");
 
-  const r = await chartBooking(b.action, { bookingId: b.bookingId, checkIn: b.checkIn, checkOut: b.checkOut, rooms: qty, label });
+  const r = await chartBooking(b.action, {
+    bookingId: b.bookingId,
+    checkIn: b.checkIn,
+    checkOut: b.checkOut,
+    rooms: qty,
+    label,
+    guest: { name, pax: String(pax), plan, phone },
+    total,
+  });
   if (!r.ok && r.reason === "sold_out") {
     // send back what's left so the guest can pick again straight away
     const a = await chartAvailability(b.checkIn, b.checkOut);
