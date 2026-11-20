@@ -24,7 +24,9 @@ const SECRET = "PASTE_SECRET_HERE";
 
 // ------------------------------------------------------------------ settings
 
-// Email alerts for leads. Empty = the Google account that owns this sheet. Several: ["a@gmail.com", "b@gmail.com"].
+// Email alerts for leads: off for now. To turn on, set EMAIL_ALERTS = true (and redeploy a new version).
+const EMAIL_ALERTS = false;
+// Who gets them. Empty = the Google account that owns this sheet. Several: ["a@gmail.com", "b@gmail.com"].
 const ALERT_TO = [];
 const ALERT_STAGES = ["payment", "booked"];
 
@@ -453,7 +455,7 @@ function leadPost(r) {
     return text("ok");
   } finally {
     lock.releaseLock();
-    if (alertLater) sendAlert(alertLater);
+    if (alertLater && EMAIL_ALERTS) sendAlert(alertLater);
     alertLater = null;
   }
 }
