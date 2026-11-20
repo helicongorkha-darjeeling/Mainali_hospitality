@@ -25,6 +25,7 @@ import {
   type RoomQty,
 } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
+import { GuestPicker, MAX_GUESTS, guestsLabel } from "./GuestPicker";
 import { captureLead, type Lead, type LeadStage } from "@/lib/leads";
 import { fullName, greetingName, titles } from "@/lib/guest";
 import type { ChartReply } from "@/lib/chart";
@@ -61,15 +62,18 @@ export function BookingFlow() {
     const checkIn = pIn && pIn >= today ? pIn : today;
     const pOut = params.get("out") ?? d.checkOut;
     const checkOut = pOut && pOut > checkIn ? pOut : addDays(checkIn, 1);
-    const guests = Math.min(20, Math.max(1, Number(params.get("g") ?? d.guests ?? 2) || 2));
+    const guests = Math.min(MAX_GUESTS, Math.max(1, Number(params.get("g") ?? d.guests ?? 2) || 2));
+    const split = d.adults != null && d.adults >= 1 && d.adults + (d.children ?? 0) === guests;
     const room = params.get("room") ?? d.room;
-    return { today, checkIn, checkOut, guests, room: isRoom(room) ? room : ("" as const), title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
+    return { today, checkIn, checkOut, guests, adults: split ? d.adults! : guests, children: split ? d.children ?? 0 : 0, room: isRoom(room) ? room : ("" as const), title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "", email: d.email ?? "" };
   });
 
   const [step, setStep] = useState<Step>("rooms");
   const [checkIn, setCheckIn] = useState(init.checkIn);
   const [checkOut, setCheckOut] = useState(init.checkOut);
-  const [guests, setGuests] = useState(init.guests);
+  const [adults, setAdults] = useState(init.adults);
+  const [children, setChildren] = useState(init.children);
+  const guests = adults + children;
   const [qty, setQty] = useState<RoomQty>(() => allocateRooms(init.guests, init.room));
   const [plan, setPlan] = useState<MealPlanCode>("EP");
   const [title, setTitle] = useState(init.title);
@@ -139,9 +143,10 @@ export function BookingFlow() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const changeGuests = (g: number) => {
-    setGuests(g);
-    setQty(allocateRooms(g, "", limits));
+  const changeGuests = (a: number, c: number) => {
+    setAdults(a);
+    setChildren(c);
+    setQty(allocateRooms(a + c, "", limits));
   };
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
@@ -187,7 +192,7 @@ export function BookingFlow() {
   const toPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed || holding) return;
-    saveDraft({ checkIn, checkOut, guests, room: "", title, name, phone, email });
+    saveDraft({ checkIn, checkOut, guests, adults, children, room: "", title, name, phone, email });
     const id = bookingId || newBookingId();
     setBookingId(id);
     setHolding(true);
@@ -246,7 +251,7 @@ export function BookingFlow() {
     `Email: ${email}`,
     `Check-in: ${formatFull(checkIn)}`,
     `Check-out: ${formatFull(checkOut)} (${nights} night${nights > 1 ? "s" : ""})`,
-    `Guests: ${guests}`,
+    `Guests: ${guests}${children ? ` (${guestsLabel(adults, children)})` : ""}`,
     `Rooms: ${describeRooms(qty)}`,
     `Meal plan: ${mealName} (${plan})`,
     `Total paid: ${inr(q.total)} by UPI (payment note: Hotel Teesta booking ${bookingId})`,
@@ -301,14 +306,7 @@ export function BookingFlow() {
                   <span>Check-out · {nights} night{nights > 1 ? "s" : ""}</span>
                   <input type="date" min={addDays(checkIn, 1)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
                 </label>
-                <label className="field">
-                  <span>Guests</span>
-                  <select value={guests} onChange={(e) => changeGuests(Number(e.target.value))}>
-                    {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
-                    ))}
-                  </select>
-                </label>
+                <GuestPicker adults={adults} childCount={children} roomsCount={totalRooms(qty)} onChange={changeGuests} />
               </div>
 
               {notice && <p className="bk-notice" role="alert">{notice}</p>}

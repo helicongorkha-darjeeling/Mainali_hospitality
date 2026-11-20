@@ -35,8 +35,8 @@
 .bk-panel { border: 1px solid rgba(243,237,226,.1); border-radius: 1.1rem; padding: 1.25rem; background: rgba(243,237,226,.03); }
 .bk-perk { border-color: rgba(173,162,135,.4); background: linear-gradient(135deg, rgba(173,162,135,.12), transparent 60%); }
 .bk-stay { display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; }
-.bk-stay label:last-child { grid-column: 1 / -1; }
-@media (min-width: 640px) { .bk-stay { grid-template-columns: 1fr 1fr 1fr; } .bk-stay label:last-child { grid-column: auto; } }
+.bk-stay > :last-child { grid-column: 1 / -1; }
+@media (min-width: 640px) { .bk-stay { grid-template-columns: 1fr 1fr 1fr; } .bk-stay > :last-child { grid-column: auto; } }
 .bk-fit { font-size: 0.85rem; color: var(--color-gold-bright); }
 .bk-fit-warn { color: #f0a58a; }
 .bk-cta-inline { display: none; margin-top: 0.5rem; }

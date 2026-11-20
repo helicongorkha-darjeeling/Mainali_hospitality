@@ -9,7 +9,9 @@ import type { RoomSlug } from "@/content/site";
 export type BookingDraft = {
   checkIn: string;
   checkOut: string;
-  guests: number;
+  guests: number; // adults + children: every guest needs a bed
+  adults?: number;
+  children?: number;
   room: RoomSlug | "";
   title?: string; // Mr / Ms / Mrs / Dr, optional
   name: string;

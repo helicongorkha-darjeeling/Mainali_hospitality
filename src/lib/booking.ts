@@ -4,6 +4,8 @@ export type BookingRequest = {
   checkIn: string;
   checkOut: string;
   guests: number;
+  adults?: number;
+  children?: number;
   room: string; // room slug, or "" for any
   name: string;
   phone: string;
@@ -14,7 +16,7 @@ function bookingLines(b: BookingRequest) {
   return [
     `Check-in: ${b.checkIn || "-"}`,
     `Check-out: ${b.checkOut || "-"}`,
-    `Guests: ${b.guests}`,
+    `Guests: ${b.guests}${b.children ? ` (${b.adults} adult${b.adults === 1 ? "" : "s"}, ${b.children} child${b.children === 1 ? "" : "ren"})` : ""}`,
     `Room: ${roomName}`,
     b.name && `Name: ${b.name}`,
     b.phone && `Phone: ${b.phone}`,

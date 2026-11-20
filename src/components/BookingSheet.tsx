@@ -10,6 +10,8 @@ import { addDays, allocateRooms, describeRooms, nightsBetween, todayISO } from "
 import { loadDraft, saveDraft } from "@/lib/draft";
 import { captureLead } from "@/lib/leads";
 import { fullName, titles } from "@/lib/guest";
+import { GuestPicker, MAX_GUESTS } from "./booking/GuestPicker";
+import { totalRooms } from "@/lib/pricing";
 
 export function BookingSheet() {
   const { isOpen, everOpened, room, close } = useBooking();
@@ -66,11 +68,16 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
     const checkIn = d.checkIn && d.checkIn >= today ? d.checkIn : today;
     const checkOut = d.checkOut && d.checkOut > checkIn ? d.checkOut : addDays(checkIn, 1);
     const fromRoom = rooms.find((r) => r.slug === initialRoom)?.maxGuests;
-    return { today, checkIn, checkOut, guests: fromRoom ?? d.guests ?? 2, title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "" };
+    const guests = Math.min(MAX_GUESTS, fromRoom ?? d.guests ?? 2);
+    // the split is only reused if it still adds up to the guest count
+    const split = d.adults != null && d.adults >= 1 && d.adults + (d.children ?? 0) === guests;
+    return { today, checkIn, checkOut, guests, adults: split ? d.adults! : guests, children: split ? d.children ?? 0 : 0, title: d.title ?? "", name: d.name ?? "", phone: d.phone ?? "" };
   });
   const [checkIn, setCheckIn] = useState(init.checkIn);
   const [checkOut, setCheckOut] = useState(init.checkOut);
-  const [guests, setGuests] = useState(init.guests);
+  const [adults, setAdults] = useState(init.adults);
+  const [children, setChildren] = useState(init.children);
+  const guests = adults + children;
   const [roomSlug, setRoomSlug] = useState<RoomSlug | "">(initialRoom);
   const [title, setTitle] = useState(init.title);
   const [name, setName] = useState(init.name);
@@ -82,8 +89,9 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
   }, [router]);
 
   const nights = nightsBetween(checkIn, checkOut);
-  const plan = useMemo(() => describeRooms(allocateRooms(guests, roomSlug)), [guests, roomSlug]);
-  const req = { checkIn, checkOut, guests, room: roomSlug, title, name, phone };
+  const alloc = useMemo(() => allocateRooms(guests, roomSlug), [guests, roomSlug]);
+  const plan = describeRooms(alloc);
+  const req = { checkIn, checkOut, guests, adults, children, room: roomSlug, title, name, phone };
 
   const changeCheckIn = (v: string) => {
     setCheckIn(v);
@@ -111,16 +119,20 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
         <span>Check-out · {nights} night{nights > 1 ? "s" : ""}</span>
         <input type="date" name="check-out" required min={addDays(checkIn, 1)} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
       </label>
-      <label className="field">
-        <span>Guests</span>
-        <select value={guests} onChange={(e) => setGuests(Number(e.target.value))}>
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
-          ))}
-        </select>
-      </label>
-      <label className="field">
-        <span>Room</span>
+      <GuestPicker
+        adults={adults}
+        childCount={children}
+        roomsText={plan}
+        roomsCount={totalRooms(alloc)}
+        inline
+        className="col-span-2"
+        onChange={(a, c) => {
+          setAdults(a);
+          setChildren(c);
+        }}
+      />
+      <label className="field col-span-2">
+        <span>Room type</span>
         <select value={roomSlug} onChange={(e) => setRoomSlug(e.target.value as RoomSlug | "")}>
           <option value="">Best fit</option>
           {rooms.map((r) => (
@@ -129,7 +141,7 @@ function BookingForm({ initialRoom }: { initialRoom: RoomSlug | "" }) {
         </select>
       </label>
       <p className="col-span-2 -mt-1 text-xs text-gold-bright" aria-live="polite">
-        Best fit: {plan}
+        {roomSlug ? "Your rooms" : "Best fit"}: {plan}
       </p>
       <div className="field col-span-2 sm:col-span-1">
         <label htmlFor="bk-name">Name</label>
