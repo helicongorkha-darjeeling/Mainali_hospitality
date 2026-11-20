@@ -25,6 +25,7 @@ import {
   type RoomQty,
 } from "@/lib/pricing";
 import { loadDraft, saveDraft } from "@/lib/draft";
+import { EmailVerify, type EmailState } from "./EmailVerify";
 import { GuestPicker, MAX_GUESTS, guestsLabel } from "./GuestPicker";
 import { captureLead, type Lead, type LeadStage } from "@/lib/leads";
 import { fullName, greetingName, titles } from "@/lib/guest";
@@ -82,6 +83,8 @@ export function BookingFlow() {
   const [email, setEmail] = useState(init.email);
   const [notes, setNotes] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [emailState, setEmailState] = useState<EmailState>("unverified");
+  const emailOk = emailState !== "unverified";
   const [bookingId, setBookingId] = useState("");
   const [platform] = useState(detectPlatform);
   const [paying, setPaying] = useState(false);
@@ -191,7 +194,7 @@ export function BookingFlow() {
   };
   const toPay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreed || holding) return;
+    if (!agreed || !emailOk || holding) return;
     saveDraft({ checkIn, checkOut, guests, adults, children, room: "", title, name, phone, email });
     const id = bookingId || newBookingId();
     setBookingId(id);
@@ -264,8 +267,8 @@ export function BookingFlow() {
         {totalRooms(qty) > 1 ? "Book these rooms" : "Book this room"}
       </button>
     ) : step === "review" ? (
-      <button type="submit" form="guest-form" className="btn-gold w-full" disabled={!agreed} aria-busy={holding}>
-        {holding ? <span className="btn-busy">Holding your rooms…</span> : "Continue to payment"}
+      <button type="submit" form="guest-form" className="btn-gold w-full" disabled={!agreed || !emailOk} aria-busy={holding}>
+        {holding ? <span className="btn-busy">Holding your rooms…</span> : !emailOk ? "Verify your email to continue" : "Continue to payment"}
       </button>
     ) : null;
 
@@ -416,10 +419,7 @@ export function BookingFlow() {
                     <span>Phone</span>
                     <input name="tel" type="tel" autoComplete="tel" inputMode="tel" required pattern="[0-9+\s\-]{8,16}" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => lead("review")} />
                   </label>
-                  <label className="field sm:col-span-2">
-                    <span>Email · for your confirmation</span>
-                    <input name="email" type="email" autoComplete="email" inputMode="email" required placeholder="you@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => lead("review")} />
-                  </label>
+                  <EmailVerify email={email} onEmail={setEmail} onState={setEmailState} onBlur={() => lead("review")} />
                   <label className="field sm:col-span-2">
                     <span>Special requests (optional)</span>
                     <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Early check-in, airport pickup, extra blanket…" />

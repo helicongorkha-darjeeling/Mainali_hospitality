@@ -214,3 +214,35 @@
   .bk-head, .bk-bar, .bk-aside, .bk-back, .btn-gold, .btn-ghost { display: none !important; }
   .bk { background: #fff; }
 }
+
+/* email + one-time code (EmailVerify.tsx) */
+.ev-row, .ev-code { display: flex; gap: 0.5rem; }
+.ev-row input, .ev-code input { flex: 1; min-width: 0; }
+.ev-row input[readonly] { opacity: 0.85; }
+.ev-code { margin-top: 0.5rem; }
+.ev-code input { letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.ev-code input::placeholder { letter-spacing: normal; }
+.ev-send {
+  flex: none; height: 3rem; padding: 0 1.1rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold-bright);
+  font-size: 0.85rem; font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+}
+.ev-send:hover:not(:disabled) { background: rgba(173,162,135,.15); }
+.ev-send:disabled { opacity: 0.45; cursor: not-allowed; }
+.ev-ok {
+  flex: none; display: inline-flex; align-items: center; gap: 0.35rem;
+  height: 3rem; padding: 0 0.9rem;
+  border-radius: 0.8rem;
+  background: rgba(74, 168, 110, .14);
+  border: 1px solid rgba(74, 168, 110, .5);
+  color: #8fd8a8; font-size: 0.85rem; font-weight: 600;
+}
+.ev-change { align-self: flex-start; font-size: 0.78rem; color: var(--color-gold-bright); text-decoration: underline; text-underline-offset: 2px; }
+.ev-msg { font-size: 0.8rem; line-height: 1.4; }
+.ev-info { color: rgba(243,237,226,.7); }
+.ev-err { color: #f0a58f; }
+.ev-ok-text { color: #8fd8a8; }
