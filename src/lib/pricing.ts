@@ -3,6 +3,7 @@ import {
   cancellationRules,
   convenienceFee,
   mealGstRate,
+  extraMattress,
   mealPlans,
   roomGstTiers,
   roomRates,
@@ -99,20 +100,27 @@ export type Quote = {
   roomsDirect: number;
   meals: number;
   mealPlan: (typeof mealPlans)[number];
+  mattresses: number;
+  mattressCost: number;
   taxes: number;
   fee: number;
   total: number;
   savings: number;
 };
 
-export function quote(q: RoomQty, guests: number, nights: number, plan: MealPlanCode): Quote {
+/** Most extra mattresses the guest can add for these rooms. */
+export const maxMattresses = (q: RoomQty) => totalRooms(q) * extraMattress.maxPerRoom;
+
+export function quote(q: RoomQty, guests: number, nights: number, plan: MealPlanCode, extraMattresses = 0): Quote {
   const slugs = Object.keys(q) as RoomSlug[];
   const rack = slugs.reduce((s, k) => s + q[k] * roomRates[k].rack * nights, 0);
   const roomsDirect = slugs.reduce((s, k) => s + q[k] * roomRates[k].direct * nights, 0);
   const mealPlan = mealPlans.find((m) => m.code === plan) ?? mealPlans[0];
   const meals = mealPlan.perGuestNight * guests * nights;
   const roomTax = slugs.reduce((s, k) => s + q[k] * nights * roomRates[k].direct * roomGstRate(roomRates[k].direct), 0);
-  const taxes = Math.round(roomTax + meals * mealGstRate);
+  const mattresses = Math.max(0, Math.min(maxMattresses(q), Math.floor(extraMattresses) || 0));
+  const mattressCost = mattresses * extraMattress.perNight * nights;
+  const taxes = Math.round(roomTax + meals * mealGstRate + mattressCost * extraMattress.gstRate);
   const fee = convenienceFee;
   return {
     nights,
@@ -122,9 +130,11 @@ export function quote(q: RoomQty, guests: number, nights: number, plan: MealPlan
     roomsDirect,
     meals,
     mealPlan,
+    mattresses,
+    mattressCost,
     taxes,
     fee,
-    total: roomsDirect + meals + taxes + fee,
+    total: roomsDirect + meals + mattressCost + taxes + fee,
     savings: rack - roomsDirect,
   };
 }

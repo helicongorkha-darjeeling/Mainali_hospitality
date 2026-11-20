@@ -114,6 +114,15 @@ export function PriceCard({ q, guests }: { q: Quote; guests: number }) {
             <dd>{inr(q.meals)}</dd>
           </div>
         )}
+        {q.mattressCost > 0 && (
+          <div>
+            <dt>
+              Extra mattress
+              <small>{q.mattresses} × {nightsLabel}</small>
+            </dt>
+            <dd>{inr(q.mattressCost)}</dd>
+          </div>
+        )}
         <div>
           <dt>Taxes (GST)</dt>
           <dd>{inr(q.taxes)}</dd>

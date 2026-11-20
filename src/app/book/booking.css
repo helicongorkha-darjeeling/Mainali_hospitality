@@ -97,6 +97,11 @@
 .bk-meal-name { font-weight: 600; }
 .bk-meal-detail { font-size: 0.78rem; color: rgba(243,237,226,.6); }
 .bk-meal-price { font-size: 0.8rem; color: var(--color-gold-bright); }
+.bk-extra { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border-radius: 1rem; border: 1px solid rgba(243,237,226,.12); transition: border-color .25s, background .25s; }
+.bk-extra[data-on="true"] { border-color: var(--color-gold); background: rgba(173,162,135,.1); }
+.bk-extra .bk-meal-code { flex: none; }
+.bk-extra[data-on="true"] .bk-meal-code { background: var(--color-gold); color: var(--color-ink); }
+.bk-extra-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
 
 /* price card (paper) */
 .pcard { border-radius: 1.1rem; padding: 1.25rem; background: var(--color-ivory); color: var(--color-ink); box-shadow: 0 30px 60px -30px rgba(0,0,0,.8); }

@@ -1,7 +1,7 @@
 import { rooms } from "@/content/site";
 import type { MealPlanCode } from "@/content/booking";
 import { chartAvailability, chartBooking } from "@/lib/chart";
-import { emptyQty, inventory, nightsBetween, quote } from "@/lib/pricing";
+import { emptyQty, inventory, maxMattresses, nightsBetween, quote } from "@/lib/pricing";
 
 const ID = /^TST-\d{6}-[A-Z0-9]{4}$/;
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -46,8 +46,10 @@ export async function POST(req: Request) {
   const plan: MealPlanCode | "" = PLANS.includes(b.plan) ? b.plan : "";
   const phone = String(b.phone ?? "").replace(/[^\d+]/g, "").slice(0, 16);
   // the amount the guest is asked to pay, worked out here rather than trusted from the browser
-  const total = plan ? quote(qty, pax, nightsBetween(b.checkIn, b.checkOut), plan).total : 0;
-  const label = [name, `${pax} pax`, plan, phone].filter(Boolean).join(" · ");
+  const mattresses = Math.max(0, Math.min(maxMattresses(qty), Math.floor(Number(b.mattresses)) || 0));
+  const total = plan ? quote(qty, pax, nightsBetween(b.checkIn, b.checkOut), plan, mattresses).total : 0;
+  const extra = mattresses ? `+${mattresses} extra mattress${mattresses > 1 ? "es" : ""}` : "";
+  const label = [name, `${pax} pax`, plan, extra, phone].filter(Boolean).join(" · ");
 
   const r = await chartBooking(b.action, {
     bookingId: b.bookingId,

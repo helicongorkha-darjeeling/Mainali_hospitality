@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { hotel, rooms, type RoomSlug } from "@/content/site";
-import { directThanks, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
+import { directThanks, extraMattress, frontDeskPerk, mealPlans, roomHighlights, upi, type MealPlanCode } from "@/content/booking";
 import {
   addDays,
   allocateRooms,
@@ -13,6 +13,7 @@ import {
   formatFull,
   inr,
   inventory,
+  maxMattresses,
   newBookingId,
   nightsBetween,
   quote,
@@ -77,6 +78,7 @@ export function BookingFlow() {
   const guests = adults + children;
   const [qty, setQty] = useState<RoomQty>(() => allocateRooms(init.guests, init.room));
   const [plan, setPlan] = useState<MealPlanCode>("EP");
+  const [mattressPick, setMattresses] = useState(0);
   const [title, setTitle] = useState(init.title);
   const [name, setName] = useState(init.name);
   const [phone, setPhone] = useState(init.phone);
@@ -135,7 +137,9 @@ export function BookingFlow() {
   }, [init]);
 
   const nights = nightsBetween(checkIn, checkOut);
-  const q = useMemo(() => quote(qty, guests, nights, plan), [qty, guests, nights, plan]);
+  const mattresses = Math.min(mattressPick, maxMattresses(qty)); // fewer rooms = fewer mattresses allowed
+  const q = useMemo(() => quote(qty, guests, nights, plan, mattresses), [qty, guests, nights, plan, mattresses]);
+  const mattressText = mattresses ? `${mattresses} extra mattress${mattresses > 1 ? "es" : ""}` : "";
   const cap = totalCapacity(qty);
   const roomsOk = totalRooms(qty) > 0 && cap >= guests;
   const bedsLeft = totalCapacity(limits);
@@ -157,7 +161,8 @@ export function BookingFlow() {
   };
 
   // what the desk sees in the leads sheet: "2 × The King · rooms 301, 302"
-  const roomsText = (h = held) => describeRooms(qty) + (h ? ` · room${h.includes(",") ? "s" : ""} ${h}` : "");
+  const roomsText = (h = held) =>
+    describeRooms(qty) + (h ? ` · room${h.includes(",") ? "s" : ""} ${h}` : "") + (mattressText ? ` + ${mattressText}` : "");
 
   // lead row in Supabase: the same row moves forward as the guest does
   const lead = (stage: LeadStage, extra: Partial<Lead> = {}) =>
@@ -180,7 +185,7 @@ export function BookingFlow() {
     fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, bookingId: id, checkIn, checkOut, rooms: qty, name: fullName(title, name), guests, plan, phone }),
+      body: JSON.stringify({ action, bookingId: id, checkIn, checkOut, rooms: qty, mattresses, name: fullName(title, name), guests, plan, phone }),
       keepalive: action === "confirm", // still sent if the guest closes the page
     })
       .then((r) => r.json())
@@ -257,6 +262,7 @@ export function BookingFlow() {
     `Guests: ${guests}${children ? ` (${guestsLabel(adults, children)})` : ""}`,
     `Rooms: ${describeRooms(qty)}`,
     `Meal plan: ${mealName} (${plan})`,
+    mattressText && `Extra: ${mattressText}`,
     `Total paid: ${inr(q.total)} by UPI (payment note: Hotel Teesta booking ${bookingId})`,
     notes && `Requests: ${notes}`,
   ].filter(Boolean) as string[];
@@ -369,6 +375,19 @@ export function BookingFlow() {
                 ))}
               </div>
 
+              <h2 className="bk-h2">Extras</h2>
+              <div className="bk-extra" data-on={mattresses > 0}>
+                <span className="bk-meal-code" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="9" width="18" height="7" rx="2" /><path d="M5 16v2M19 16v2M7 9V7.5A1.5 1.5 0 0 1 8.5 6h7A1.5 1.5 0 0 1 17 7.5V9" /></svg>
+                </span>
+                <span className="bk-extra-text">
+                  <span className="bk-meal-name">Extra mattress</span>
+                  <span className="bk-meal-detail">A floor mattress with bedding, for one more guest in a room. Up to {extraMattress.maxPerRoom} per room.</span>
+                  <span className="bk-meal-price">+ {inr(extraMattress.perNight)} / mattress / night</span>
+                </span>
+                <Stepper value={mattresses} max={maxMattresses(qty)} onChange={setMattresses} label="extra mattress" />
+              </div>
+
               <div className="bk-cta-inline">{cta}</div>
             </>
           )}
@@ -378,7 +397,7 @@ export function BookingFlow() {
             <>
               <button type="button" className="bk-back" onClick={() => go("rooms")}>← Change rooms</button>
               <h1 className="bk-h1">Review your stay</h1>
-              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} />
+              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})${mattressText ? ` · ${mattressText}` : ""}`} />
 
               {rooms
                 .filter((r) => qty[r.slug] > 0)
@@ -527,7 +546,7 @@ export function BookingFlow() {
                   {directThanks.tip}
                 </p>
               </div>
-              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})`} bookingId={bookingId} guestName={fullName(title, name)} />
+              <Ticket checkIn={checkIn} checkOut={checkOut} nights={nights} qty={qty} guests={guests} mealPlanName={`${mealName} (${plan})${mattressText ? ` · ${mattressText}` : ""}`} bookingId={bookingId} guestName={fullName(title, name)} />
               <div className="bk-panel">
                 <p className="bk-h3">Your booking is with our front desk</p>
                 <p className="text-sm text-ivory/70">Have a request, or want to hear from us sooner? Message us with your booking.</p>
